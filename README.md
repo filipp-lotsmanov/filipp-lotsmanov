@@ -1,9 +1,18 @@
-I build computer vision and sequence models, and the infrastructure that takes them from a training
-run to something another service can call.
+## About
+
+Third-year Applied Data Science & AI student at Breda University of Applied Sciences, graduating
+July 2028.
+
+I work on computer vision and sequence models — segmentation, object localisation, gesture
+recognition — and on the infrastructure that trains and serves them: Airflow, Azure ML, FastAPI,
+Docker. Python is my main language, Go for concurrent data work.
+
+Most of the projects below were built for external clients or to hackathon deadlines as part of the
+programme; two are solo work. Looking for an ML engineering internship.
 
 Six projects below: a root-segmentation model at **0.8371 F1** on 20,512 held-out test patches, a
 Kaggle entry taken from 37.6% to **10.7% sMAPE**, a Go pipeline streaming **2.3 GB** of CSV through
-a **4 MB** heap, and the winning submission at **BrabantHack 2026**.
+a **4 MB** heap, and the winning submission at **BrabantHack 2026**
 
 <p align="center">
   <img src="assets/shadow-detection-demo.gif" width="640" alt="Predicting an off-screen pedestrian's position from their shadow">
@@ -22,20 +31,6 @@ a **4 MB** heap, and the winning submission at **BrabantHack 2026**.
   <sub>Breda, Netherlands · seeking an ML engineering internship</sub><br>
   <sub><a href="https://github.com/filipp-lotsmanov/resume/blob/main/resume.pdf"><b>Resume (PDF)</b></a> — single-file LaTeX, compiled and ATS-verified in CI on every push</sub>
 </p>
-
----
-
-## About
-
-Third-year Applied Data Science & AI student at Breda University of Applied Sciences, graduating
-July 2028.
-
-I work on computer vision and sequence models — segmentation, object localisation, gesture
-recognition — and on the infrastructure that trains and serves them: Airflow, Azure ML, FastAPI,
-Docker. Python is my main language, Go for concurrent data work.
-
-Most of the projects below were built for external clients or to hackathon deadlines as part of the
-programme; two are solo work. Looking for an ML engineering internship.
 
 ---
 
