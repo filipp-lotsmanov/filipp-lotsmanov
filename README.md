@@ -1,6 +1,9 @@
-I build computer vision and sequence models, and the infrastructure that takes them from a training run to something another service can call.
+I build computer vision and sequence models, and the infrastructure that takes them from a training
+run to something another service can call.
 
-Five projects below: a root-segmentation model at 0.8371 F1 on 20,512 held-out test patches, a Kaggle entry taken from 37.6% to 10.7% sMAPE, a Go pipeline streaming 2.3 GB of CSV through a 4 MB heap, and the winning submission at BrabantHack 2026.
+Six projects below: a root-segmentation model at **0.8371 F1** on 20,512 held-out test patches, a
+Kaggle entry taken from 37.6% to **10.7% sMAPE**, a Go pipeline streaming **2.3 GB** of CSV through
+a **4 MB** heap, and the winning submission at **BrabantHack 2026**.
 
 <p align="center">
   <img src="assets/shadow-detection-demo.gif" width="640" alt="Predicting an off-screen pedestrian's position from their shadow">
@@ -15,12 +18,30 @@ Five projects below: a root-segmentation model at 0.8371 F1 on 20,512 held-out t
   <img src="https://img.shields.io/badge/Docker-1c1c1c?style=flat-square&logo=docker&logoColor=white" alt="Docker">
 </p>
 
+<p align="center">
+  <sub>Breda, Netherlands · seeking an ML engineering internship</sub><br>
+  <sub><a href="https://github.com/filipp-lotsmanov/resume/blob/main/resume.pdf"><b>Resume (PDF)</b></a> — single-file LaTeX, compiled and ATS-verified in CI on every push</sub>
+</p>
+
+---
+
+## About
+
+Third-year Applied Data Science & AI student at Breda University of Applied Sciences, graduating
+July 2028.
+
+I work on computer vision and sequence models — segmentation, object localisation, gesture
+recognition — and on the infrastructure that trains and serves them: Airflow, Azure ML, FastAPI,
+Docker. Python is my main language, Go for concurrent data work.
+
+Most of the projects below were built for external clients or to hackathon deadlines as part of the
+programme; two are solo work. Looking for an ML engineering internship.
+
 ---
 
 ## What the portfolio covers
 
-Most student projects stop at a notebook and a validation score. These are placed on the stages
-they actually reach:
+Each project mapped to the lifecycle stages it reaches:
 
 ```mermaid
 flowchart LR
@@ -54,6 +75,7 @@ traffic.
 | **[shadow-detection](https://github.com/filipp-lotsmanov/shadow-detection)**<br><sub>Locating what the camera cannot see</sub> | Team of 3 · **BrabantHack 2026 winner**, DEMCON Deep Tech | **IoU 0.626** · hidden leaderboard test set, winning submission |
 | **[go-etl-pipeline](https://github.com/filipp-lotsmanov/go-etl-pipeline)**<br><sub>Concurrent streaming ETL in Go</sub> | Personal | **2.8–5.2 MB heap** · over 2.3 GB / 27.6M records at ~41k rec/sec |
 | **[sign-language](https://github.com/filipp-lotsmanov/sign-language)**<br><sub>Real-time gesture recognition in the browser</sub> | Team of 3 | Dual-model routing over WebSocket · metrics withheld, see below |
+| **[resume](https://github.com/filipp-lotsmanov/resume)**<br><sub>LaTeX CV with a verification pipeline</sub> | Personal | CI compiles, fails on overfull boxes, and asserts the PDF parses for ATS |
 
 <details>
 <summary><b>root-inoculation-mlops</b> — why registering a model is not the same as promoting it</summary>
@@ -177,6 +199,26 @@ signers — which is its own limitation, documented in the repo.
 
 </details>
 
+<details>
+<summary><b>resume</b> — a CV that fails its own build when the typesetting is wrong</summary>
+
+<br>
+
+Single-file LaTeX CV, compiled with `latexmk` and Charter, built by GitHub Actions on every push.
+
+The pipeline is the point. It asserts the Charter Type 1 binaries are actually installed — without
+`texlive-fonts-recommended` the build succeeds and silently falls back to Computer Modern, so the
+check catches a failure that would otherwise ship. It then fails the run on any overfull or
+underfull box, re-extracts the compiled PDF with `pdfplumber`, and asserts the text still parses
+into the sections and keywords an ATS would look for. A layout change that breaks machine
+readability cannot reach `main`.
+
+**Limitation:** Charter's interword gap is 2.77 pt against `pdfplumber`'s default 3.0 pt
+`x_tolerance`, so some parsers may merge adjacent words. The verifier's own normalisation does not
+detect this.
+
+</details>
+
 ---
 
 ## Stack
@@ -200,7 +242,7 @@ signers — which is its own limitation, documented in the repo.
 
 **Infrastructure** — Docker, Docker Compose, GitHub Actions, Portainer, PostgreSQL, Alembic
 
-**Tooling** — uv, ruff, pytest, Vitest, Sphinx
+**Tooling** — uv, ruff, pytest, Vitest, Sphinx, LaTeX
 
 </details>
 
@@ -211,6 +253,17 @@ signers — which is its own limitation, documented in the repo.
 - A calibration and selective-prediction study on handwritten text recognition: when a
   vision-language model is wrong about a historical manuscript, does it know?
 - Working through DVC end to end — data and model versioning, pipelines, experiments, CI with CML.
+
+---
+
+## Education
+
+**BSc Applied Data Science & Artificial Intelligence** — Breda University of Applied Sciences
+<br><sub>2024 – expected July 2028 · Breda, Netherlands · GPA 8.5 / 10</sub>
+
+Coursework spanning computer vision, deep learning, reinforcement learning, NLP, data engineering
+and MLOps, delivered as block-based projects with external clients. The root segmentation work below
+was built for the Netherlands Plant Eco-phenotyping Centre as part of the programme.
 
 ---
 
