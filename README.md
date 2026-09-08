@@ -7,8 +7,8 @@ I work on computer vision and sequence models — segmentation, object localisat
 recognition — and on the infrastructure that trains and serves them: Airflow, Azure ML, FastAPI,
 Docker. Python is my main language, Go for concurrent data work.
 
-Most of the projects below were built for external clients or to hackathon deadlines as part of the
-programme; two are solo work. Looking for an ML engineering internship.
+Most of the projects were built for external clients or to hackathon deadlines as part of the
+programme; two are solo work.
 
 Six projects below: a root-segmentation model at **0.8371 F1** on 20,512 held-out test patches, a
 Kaggle entry taken from 37.6% to **10.7% sMAPE**, a Go pipeline streaming **2.3 GB** of CSV through
