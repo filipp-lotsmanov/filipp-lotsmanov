@@ -1,10 +1,6 @@
-I train vision and sequence models, measure them on data they have not seen, and put them behind
-an API that someone else can call.
+I build computer vision and sequence models, and the infrastructure that takes them from a training run to something another service can call.
 
-Five projects below. **0.8371 F1** on a held-out test set of 20,512 patches, with the training log
-committed next to the claim. **10.7% sMAPE** on a Kaggle private leaderboard, down from 37.6%.
-**2.3 GB** of CSV through a **4 MB** heap. A hackathon win, and a model head that does not work
-and says so.
+Five projects below: a root-segmentation model at 0.8371 F1 on 20,512 held-out test patches, a Kaggle entry taken from 37.6% to 10.7% sMAPE, a Go pipeline streaming 2.3 GB of CSV through a 4 MB heap, and the winning submission at BrabantHack 2026.
 
 <p align="center">
   <img src="assets/shadow-detection-demo.gif" width="640" alt="Predicting an off-screen pedestrian's position from their shadow">
