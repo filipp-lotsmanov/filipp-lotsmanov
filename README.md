@@ -15,7 +15,7 @@ Kaggle entry taken from 37.6% to **10.7% sMAPE**, a Go pipeline streaming **2.3 
 a **4 MB** heap, and the winning submission at **BrabantHack 2026**
 
 <p align="center">
-  <img src="assets/shadow-detection-demo.gif" width="640" alt="Predicting an off-screen pedestrian's position from their shadow">
+  <img src="assets/demo.gif" width="640" alt="Predicting an off-screen pedestrian's position from their shadow">
 </p>
 
 <p align="center">
