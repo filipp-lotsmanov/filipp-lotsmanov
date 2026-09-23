@@ -1,13 +1,7 @@
-I train vision and sequence models, measure them on data they have not seen, and put them behind
-an API that someone else can call.
-
-Five projects below. **0.8371 F1** on a held-out test set of 20,512 patches, with the training log
-committed next to the claim. **10.7% sMAPE** on a Kaggle private leaderboard, down from 37.6%.
-**2.3 GB** of CSV through a **4 MB** heap. A hackathon win, and a model head that does not work
-and says so.
+<h1 align="center">Filipp Lotsmanov</h1>
 
 <p align="center">
-  <img src="assets/shadow-detection-demo.gif" width="640" alt="Predicting an off-screen pedestrian's position from their shadow">
+  Computer vision and sequence models — and the pipelines that train, serve and retrain them.
 </p>
 
 <p align="center">
@@ -19,167 +13,45 @@ and says so.
   <img src="https://img.shields.io/badge/Docker-1c1c1c?style=flat-square&logo=docker&logoColor=white" alt="Docker">
 </p>
 
+<p align="center">
+  <sub>Breda, Netherlands · open to an ML engineering internship</sub>
+</p>
+
+<p align="center">
+  <img src="assets/demo.gif" width="640" alt="Predicting an off-screen pedestrian's position from their shadow">
+</p>
+
 ---
 
-## What the portfolio covers
+## About
 
-Most student projects stop at a notebook and a validation score. These are placed on the stages
-they actually reach:
+Third-year Applied Data Science & AI at Breda University of Applied Sciences. I build segmentation
+and gesture models, and the infrastructure around them — Airflow, Azure ML, FastAPI, Docker. Python
+is my main language, Go for concurrent data work.
 
-```mermaid
-flowchart LR
-    A[Ingest] --> B[Train]
-    B --> C[Evaluate]
-    C --> D[Serve]
-    D --> E[Monitor]
-    E --> F[Retrain]
-    F -.-> B
-
-    A -.- P1[go-etl-pipeline]
-    B -.- P2[shadow-detection<br>sign-language]
-    C -.- P3[autonomous-root-inoculation]
-    D -.- P4[all four ML projects]
-    E -.- P5[root-inoculation-mlops]
-    F -.- P5
-```
-
-`root-inoculation-mlops` is the only one that closes the loop: researcher corrections re-enter the
-training set, a candidate retrains, and it has to clear two independent gates before it takes
-traffic.
+Most of these were built for external clients or to hackathon deadlines; two are solo. Every number
+below names the set it was measured on, and each repo is as explicit about what the project does not
+do as about what it does.
 
 ---
 
 ## Projects
 
-| Project | Type | Headline result |
+| Project | What it is | Result |
 |---|---|---|
-| **[root-inoculation-mlops](https://github.com/filipp-lotsmanov/root-inoculation-mlops)**<br><sub>Train, serve, monitor, retrain</sub> | Team capstone | **0.8371 F1** · held-out test, 20,512 patches, training log in-repo |
-| **[autonomous-root-inoculation](https://github.com/filipp-lotsmanov/autonomous-root-inoculation)**<br><sub>Segmentation driving a lab robot</sub> | Individual | **10.7% sMAPE** · Kaggle private leaderboard, from 37.6% |
-| **[shadow-detection](https://github.com/filipp-lotsmanov/shadow-detection)**<br><sub>Locating what the camera cannot see</sub> | Team of 3 · **BrabantHack 2026 winner**, DEMCON Deep Tech | **IoU 0.626** · hidden leaderboard test set, winning submission |
-| **[go-etl-pipeline](https://github.com/filipp-lotsmanov/go-etl-pipeline)**<br><sub>Concurrent streaming ETL in Go</sub> | Personal | **2.8–5.2 MB heap** · over 2.3 GB / 27.6M records at ~41k rec/sec |
-| **[sign-language](https://github.com/filipp-lotsmanov/sign-language)**<br><sub>Real-time gesture recognition in the browser</sub> | Team of 3 | Dual-model routing over WebSocket · metrics withheld, see below |
+| **[root-inoculation-mlops](https://github.com/filipp-lotsmanov/root-inoculation-mlops)** | U-Net root segmentation with a correction-driven retrain loop and two promotion gates · team capstone for NPEC | **0.8371 F1** on 20,512 held-out patches |
+| **[autonomous-root-inoculation](https://github.com/filipp-lotsmanov/autonomous-root-inoculation)** | Segmentation and a PID controller driving an Opentrons OT-2 pipette · individual | **10.7% sMAPE**, down from 37.6% |
+| **[shadow-detection](https://github.com/filipp-lotsmanov/shadow-detection)** | Locating an off-frame pedestrian from their shadow alone · team of three | **BrabantHack 2026 winner** · IoU 0.626 |
+| **[go-etl-pipeline](https://github.com/filipp-lotsmanov/go-etl-pipeline)** | Concurrent streaming ETL in Go where every row is accounted for · personal | **2.3 GB through a 4 MB heap** |
+| **[sign-language](https://github.com/filipp-lotsmanov/sign-language)** | Real-time NGT fingerspelling in the browser · team of three | Two models routed over one socket |
+| **[resume](https://github.com/filipp-lotsmanov/resume)** | LaTeX CV that verifies itself in CI · personal | The build fails if the PDF stops parsing for an ATS |
 
-<details>
-<summary><b>root-inoculation-mlops</b> — why registering a model is not the same as promoting it</summary>
-
-<br>
-
-Built for the Netherlands Plant Eco-phenotyping Centre as a five-person capstone. A U-Net segments
-*Arabidopsis* root tissue. The interesting part is the machinery around it.
-
-Researchers flag or correct predictions in the UI. A daily DAG counts the corrections and, past a
-threshold, stages them as a versioned Azure ML data asset, merges them into training data **while
-keeping the test set frozen**, and retrains. The candidate then faces two separate gates: it enters
-the registry only if it clears an F1 threshold on held-out test, and it takes traffic only if it
-beats the model currently serving. A model can register and still lose promotion — passing an
-offline threshold is not the same as being better than production.
-
-**My scope:** Airflow orchestration and the Azure ML job layer, the feedback flywheel, the
-champion-challenger promotion gate, most of the `cv-pipeline` package, an equal share of backend
-and infrastructure. Teammates built the frontend.
-
-**Result:** 0.8371 F1, 0.7199 IoU on 20,512 held-out test patches. Split at source-image level
-before patching, so overlapping patches cannot straddle the boundary. The training log for that
-exact run is committed under `docs/evidence/`.
-
-**Limitation:** the Azure and on-premise environments were university-provisioned and have been
-decommissioned. Their definitions are preserved in `infra/`; the local Compose stack is the
-reproducible path.
-
-</details>
-
-<details>
-<summary><b>autonomous-root-inoculation</b> — cutting the error by two thirds by deleting code</summary>
-
-<br>
-
-Individual project. U-Net segmentation finds root tips in petri dish images, skeletonisation and
-geodesic distance measure root length, an affine transform maps pixels to robot coordinates, and a
-PID controller drives an Opentrons OT-2 pipette onto each target.
-
-The first pipeline had adaptive dish detection, watershed instance splitting and semantic root
-classification. It scored 37.6% sMAPE. The rewrite scored 10.7% — and it was mostly subtraction.
-The plants sit in fixed positions and the dish never moves, so adaptive detection and merging logic
-were solving problems this dataset did not have.
-
-**Result:** 10.7% sMAPE on the Kaggle private leaderboard. Integrated system hit 0.646 mm mean
-positioning accuracy across 50 targets.
-
-**Limitation:** the PID and PPO controllers were measured on different simulators — a theoretical
-velocity model versus PyBullet — so their error figures are not directly comparable. The RL runs
-went to a university ClearML server and the plots were not preserved.
-
-</details>
-
-<details>
-<summary><b>shadow-detection</b> — where is the person, given only their shadow?</summary>
-
-<br>
-
-Winning entry in the BrabantHack 2026 DEMCON Deep Tech track, with Oleksii Krasnoshtanov and Danil
-Sysenko. One 720x480 road scene, pedestrian out of frame, shadow in frame. Predict the off-screen
-box where they are standing.
-
-The x-coordinate distribution is bimodal — people are always either left or right of frame — which
-is a discontinuity a single regressor handles badly. So the target is decomposed: a classifier picks
-the side, and a regressor learns continuous offsets from that edge. Nineteen hand-crafted geometric
-features are fused with the ResNet-50 features; adding them was the single largest jump, roughly
-0.57 to 0.62 IoU.
-
-**My scope:** the three-head decomposed-target architecture, the 19 geometric features, flip-aware
-augmentation with feature mirroring, and the test-time-augmentation inference path. Teammates ran
-complementary models; the submitted result was a weighted blend of all three.
-
-**Result:** the team submission scored IoU 0.626 on the hidden leaderboard test set.
-
-**Limitation:** the direction head — walking into versus out of frame — does not work. It abstains
-on every input, and the README documents the likely cause rather than quietly dropping the output.
-Training data is entirely synthetic, so real-world generalisation is untested.
-
-</details>
-
-<details>
-<summary><b>go-etl-pipeline</b> — 2.3 GB through a 4 MB heap, and an answer for every missing row</summary>
-
-<br>
-
-Personal project. A staged Go pipeline — source, validate, transform, sink — wired together by
-channels. The CSV is read row by row, so memory is independent of file size, and enrichment fans out
-across a worker pool sized by `GOMAXPROCS` rather than `NumCPU`, so a container CPU limit is
-respected instead of ignored.
-
-The part worth reading is the accounting. Every row is attributed to the stage that consumed it —
-unparseable, dropped by which validation rule, inserted, skipped as a duplicate, or failed — and a
-run whose ledger does not balance exits non-zero rather than reporting success. Loads are
-idempotent through a fingerprint unique index.
-
-**Result:** flat 2.8–5.2 MB heap across a 2.3 GB, 27.6M-record file at roughly 41,000 records/sec,
-insert-bound. Enrichment runs 4.76x faster across the worker pool than single-threaded at shipped
-settings.
-
-**Limitation:** the higher 5.7x figure in the benchmarks section was measured with a source constant
-raised, so reproducing it means editing and rebuilding.
-
-</details>
-
-<details>
-<summary><b>sign-language</b> — two models, one socket, and a split I would redo</summary>
-
-<br>
-
-Browser app teaching the Dutch Sign Language fingerspelling alphabet, with Oleksii Krasnoshtanov and
-Danil Sysenko. MediaPipe extracts 21 hand landmarks client-side, frames stream to a FastAPI backend
-over WebSocket, and static and dynamic letters dispatch to different models: a ResidualMLP over a
-63-dimensional landmark vector for the 24 static letters, a bidirectional LSTM over 30-frame
-sequences for J and Z.
-
-**Limitation, and the reason no accuracy appears above:** the training pipeline augments before
-splitting, so jittered copies of the same source frame land in train, validation and test. The
-accuracies that produces are inflated by near-duplicate leakage, so they are not worth quoting. No
-NGT fingerspelling dataset existed, so the data was recorded by team members who are not fluent
-signers — which is its own limitation, documented in the repo.
-
-</details>
+Two that are worth a minute each. **root-inoculation-mlops** separates registering a model from
+promoting it: a candidate enters the registry only if it clears an F1 threshold on frozen held-out
+test, and it takes traffic only if it beats whatever is already serving — so a model can register
+and still lose promotion. **sign-language** quotes no accuracy on purpose; its pipeline augments
+before splitting, so near-duplicate frames leak across train, validation and test, and the numbers
+that produces are not worth reporting.
 
 ---
 
@@ -204,7 +76,7 @@ signers — which is its own limitation, documented in the repo.
 
 **Infrastructure** — Docker, Docker Compose, GitHub Actions, Portainer, PostgreSQL, Alembic
 
-**Tooling** — uv, ruff, pytest, Vitest, Sphinx
+**Tooling** — uv, ruff, pytest, Vitest, Sphinx, LaTeX
 
 </details>
 
@@ -212,9 +84,19 @@ signers — which is its own limitation, documented in the repo.
 
 ## Currently
 
-- A calibration and selective-prediction study on handwritten text recognition: when a
-  vision-language model is wrong about a historical manuscript, does it know?
-- Working through DVC end to end — data and model versioning, pipelines, experiments, CI with CML.
+- Calibration and selective prediction on handwritten text recognition — when a vision-language
+  model is wrong about a historical manuscript, does it know?
+- DVC end to end: data and model versioning, pipelines, experiments, CI with CML.
+
+---
+
+## Education
+
+**BSc Applied Data Science & Artificial Intelligence** — Breda University of Applied Sciences
+<br><sub>2024 – expected July 2028 · GPA 8.5 / 10</sub>
+
+Block-based projects with external clients, spanning computer vision, deep learning, reinforcement
+learning, NLP, data engineering and MLOps.
 
 ---
 
