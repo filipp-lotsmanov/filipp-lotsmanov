@@ -1,0 +1,1236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Third-year Applied Data Science & AI at Breda University of Applied Sciences. Segmentation and sequence models, and the plumbing that serves them.">
+<meta property="og:title" content="Filipp Lotsmanov">
+<meta property="og:description" content="Third-year Applied Data Science & AI at Breda University of Applied Sciences. Segmentation and sequence models, and the plumbing that serves them.">
+<meta property="og:type" content="website">
+<title>Filipp Lotsmanov</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..600,0..100,0..1&family=Schibsted+Grotesk:wght@400..900&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    color-scheme: light;
+
+    --paper:   #ffffff;
+    --ink:     #12161b;
+    --ink-2:   #555f6c;
+    --ink-3:   #949ca6;
+    --hair:    rgba(18, 22, 27, 0.10);
+
+    /* four hues, one per domain; validated for CVD separation and chroma
+       against a white surface before use. Each owns a section and is always
+       direct-labelled by the project name beside it. */
+    --forest:  #0d7a55;   --forest-lo: #e6f2ec;
+    --indigo:  #3a46b0;   --indigo-lo: #eaecf8;
+    --sienna:  #c25a14;   --sienna-lo: #fbeee5;
+    --plum:    #a8357f;   --plum-lo:   #f8eaf3;
+
+    --hue: var(--forest);
+    --hue-lo: var(--forest-lo);
+    --warm-lo: #fdf1e6;
+    --sage-lo: #e9f2ec;
+
+    --serif: "Fraunces", Georgia, "Times New Roman", serif;
+    --sans:  "Schibsted Grotesk", "Helvetica Neue", Helvetica, sans-serif;
+    --mono:  "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+
+    --soft:   0 2px 6px rgba(18, 22, 27, 0.04), 0 24px 60px -24px rgba(18, 22, 27, 0.18);
+    --soft-2: 0 1px 3px rgba(18, 22, 27, 0.04), 0 10px 30px -14px rgba(18, 22, 27, 0.14);
+
+    --gutter: clamp(1.15rem, 5vw, 5rem);
+  }
+
+  * { box-sizing: border-box; }
+
+  /* fields bleed past the viewport edge by design; clip at the root so they
+     never create a horizontal scrollbar, and never sever at a section edge */
+  html { overflow-x: clip; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.72;
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: clip;
+  }
+
+  ::selection { background: var(--hue); color: #fff; }
+  a { color: inherit; text-decoration: none; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--hue); outline-offset: 4px; border-radius: 6px; }
+
+  .skip { position: absolute; left: -9999px; top: 0; z-index: 90; background: var(--ink); color: #fff; font-size: 0.8125rem; padding: 0.6rem 1rem; border-radius: 0 0 14px 0; }
+  .skip:focus { left: 0; top: 0; }
+
+  /* ---- soft colour fields: the only "background" this page has ---- */
+  .field { position: absolute; border-radius: 50%; filter: blur(90px); pointer-events: none; z-index: 0; }
+
+  section, footer { position: relative; }
+  .wrap { position: relative; z-index: 1; max-width: 1200px; margin-inline: auto; padding-inline: var(--gutter); }
+
+  /* sections fade into one another rather than butting against a rule */
+  .wash { background: linear-gradient(180deg, rgba(240,244,251,0) 0%, rgba(240,244,251,0.85) 18%, rgba(240,244,251,0.85) 82%, rgba(240,244,251,0) 100%); }
+
+  /* ---- type ---- */
+  h1, h2, h3, h4 { font-family: var(--serif); font-weight: 600; letter-spacing: -0.022em; margin: 0;
+                   font-variation-settings: "SOFT" 40, "WONK" 1; font-optical-sizing: auto; }
+  .display { font-size: clamp(2.5rem, 7vw, 5.6rem); line-height: 1.02; }
+  .title   { font-size: clamp(2rem, 4.6vw, 3.6rem); line-height: 1.06; text-wrap: balance; }
+  .em      { font-style: italic; font-weight: 400; color: var(--hue); }
+
+  .case .kicker, article .kicker { color: var(--hue); }
+  .kicker { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.19em; text-transform: uppercase; color: var(--ink-3); margin: 0; }
+  .lede  { font-size: clamp(1.02rem, 1.5vw, 1.2rem); line-height: 1.62; color: var(--ink-2); }
+  .body  { font-size: 1.0625rem; line-height: 1.72; color: var(--ink-2); max-width: 54ch; margin: 0; }
+  .body strong { color: var(--ink); font-weight: 600; }
+  .body em { font-style: italic; }
+  .code { font-family: var(--mono); font-size: 0.875em; }
+
+  .band { padding-block: clamp(4.5rem, 10vw, 9rem); scroll-margin-top: 6rem; }
+
+  .pill { display: inline-block; font-size: 0.875rem; font-weight: 600; padding: 0.78rem 1.5rem; border-radius: 999px; background: rgba(18,22,27,0.05); color: var(--ink); transition: background-color 200ms ease, color 200ms ease, transform 200ms ease; }
+  .pill:hover { background: rgba(18,22,27,0.1); transform: translateY(-1px); }
+  .pill.solid { background: var(--hue); color: #fff; box-shadow: 0 8px 22px -10px rgba(27,63,160,0.7); }
+  .pill.solid:hover { background: #16348a; }
+
+  /* ---- nav ---- */
+  .nav { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 0.9rem); z-index: 60; margin-inline: auto; max-width: 1200px; padding-inline: var(--gutter); }
+  .nav-in { display: flex; align-items: center; gap: 1rem; background: rgba(255,255,255,0.72); backdrop-filter: blur(20px) saturate(1.4); border-radius: 999px; box-shadow: var(--soft-2); padding: 0.45rem 0.5rem 0.45rem 1.3rem; }
+  .brand { font-family: var(--serif); font-size: 1.1rem; font-weight: 600; white-space: nowrap; }
+  .nav-links { display: flex; gap: 0.1rem; margin-left: auto; overflow-x: auto; scrollbar-width: none; }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .nav-links a { font-size: 0.875rem; font-weight: 500; color: var(--ink-2); padding: 0.45rem 0.85rem; border-radius: 999px; white-space: nowrap; transition: background-color 180ms ease, color 180ms ease; }
+  .nav-links a:hover { background: rgba(18,22,27,0.06); color: var(--ink); }
+  .nav .pill { padding: 0.55rem 1.15rem; font-size: 0.8125rem; }
+  @media (max-width: 760px) { .brand { display: none; } .nav-in { padding-left: 0.6rem; } .nav .pill { display: none; } }
+
+  /* ---- hero: portrait bleeds, headline overlaps it ---- */
+  .hero { padding-block: clamp(3rem, 8vw, 6.5rem) clamp(3rem, 6vw, 5rem); }
+  .hero-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); align-items: center; gap: clamp(1rem, 2vw, 2rem); }
+  .hero h1 { position: relative; z-index: 2; max-width: 14ch; }
+  .hero .lede { margin: clamp(1.4rem, 2.5vw, 2.1rem) 0 0; max-width: 42ch; }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: clamp(1.8rem, 3vw, 2.6rem); }
+
+  .face {
+    position: relative; z-index: 1;
+    width: min(100%, 460px);
+    aspect-ratio: 1;
+    margin-left: auto;
+    margin-inline-end: calc(var(--gutter) * -0.55);
+    border-radius: 50%;
+    overflow: hidden;
+    background: linear-gradient(150deg, var(--hue-lo), var(--warm-lo));
+    box-shadow: var(--soft);
+  }
+  .face img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .face.is-empty img { display: none; }
+  .face.is-empty::after { content: "portrait.jpg"; position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--mono); font-size: 0.75rem; color: var(--ink-3); }
+
+  @media (max-width: 920px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+    .hero h1 { max-width: 16ch; }
+    .face { order: -1; width: min(72%, 320px); margin-inline: auto; }
+  }
+
+  /* credentials: flowing text, not a table */
+  .creds { display: flex; flex-wrap: wrap; gap: 0.5rem 0.6rem; margin-top: clamp(2.75rem, 5vw, 4.25rem); }
+  .cr { display: inline-flex; align-items: baseline; gap: 0.5rem; padding: 0.6rem 1.1rem; border-radius: 999px; background: rgba(18,22,27,0.045); font-size: 0.9375rem; }
+  .cr b { font-weight: 600; }
+  .cr.hi { background: var(--hue-lo); color: var(--hue); }
+  .cr span { color: var(--ink-3); font-size: 0.8125rem; }
+
+  /* ---- figures: numbers in air, no cells ---- */
+  .head { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); align-items: end; gap: 1.25rem 4rem; margin-bottom: clamp(2.5rem, 5vw, 4.5rem); }
+  @media (max-width: 820px) { .head { grid-template-columns: 1fr; align-items: start; } }
+
+  .figures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(2.25rem, 4.5vw, 4rem) clamp(2rem, 5vw, 5rem); }
+  .fig .n { display: block; font-family: var(--serif); font-weight: 600; font-size: clamp(2.7rem, 5.6vw, 4.3rem); line-height: 0.95; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+  .fig .k { display: block; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.17em; text-transform: uppercase; color: var(--hue); margin-top: 0.85rem; }
+  .fig .d { display: block; font-size: 1rem; line-height: 1.4; margin-top: 0.7rem; font-weight: 500; }
+  .fig .s { display: block; font-size: 0.875rem; line-height: 1.5; color: var(--ink-2); margin-top: 0.3rem; }
+  @media (max-width: 900px) { .figures { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .figures { grid-template-columns: 1fr; } }
+
+  .aside strong { color: var(--ink); font-weight: 600; }
+
+  /* ---- charts: no card, just the drawing ---- */
+
+
+
+
+
+
+  /* result stays on the surface; the reasoning is one click away */
+  .result { margin: 1.25rem 0 0; font-size: 1.05rem; line-height: 1.5; color: var(--ink); }
+  .result b { color: var(--hue); font-weight: 700; }
+  .more { margin-top: 1.2rem; }
+  .more summary {
+    list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.6rem;
+    font-size: 0.875rem; font-weight: 600; color: var(--hue); background: var(--hue-lo);
+    padding: 0.58rem 1.15rem; border-radius: 999px; transition: filter 200ms ease;
+  }
+  .more summary::-webkit-details-marker { display: none; }
+  .more summary:hover { filter: brightness(0.965); }
+  .more summary::after {
+    content: ""; width: 0.46rem; height: 0.46rem; margin-left: 0.1rem;
+    border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+    transform: rotate(45deg) translate(-1px, -2px); transition: transform 260ms ease;
+  }
+  .more[open] summary::after { transform: rotate(-135deg) translate(-2px, -1px); }
+  .dt-in { padding-top: 1.2rem; }
+  .more .facts { margin-top: 1.1rem; }
+
+
+  /* --- ambience --- */
+  /* @property makes the colour interpolable, so the wash crossfades
+     between project hues instead of snapping */
+  @property --amb { syntax: "<color>"; inherits: true; initial-value: #e6f2ec; }
+  :root { --amb: #e6f2ec; }
+
+  .ambient {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(58vw 48vw at 84% 10%, var(--amb), transparent 62%),
+      radial-gradient(46vw 40vw at 8% 88%, var(--amb), transparent 58%);
+    opacity: 0.7;
+    transition: --amb 1100ms ease;
+  }
+
+  /* a little tooth over flat colour */
+  .grain {
+    position: fixed; inset: 0; z-index: 2; pointer-events: none; opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* media answers the pointer before it answers a click */
+  .shot { transition: transform 420ms cubic-bezier(0.22, 0.85, 0.3, 1), box-shadow 420ms ease; }
+  .shot > img { transition: transform 700ms cubic-bezier(0.22, 0.85, 0.3, 1); }
+  .shot:hover { transform: translateY(-4px); box-shadow: 0 3px 8px rgba(18,22,27,0.06), 0 34px 70px -28px rgba(18,22,27,0.26); }
+  .shot:hover > img { transform: scale(1.035); }
+  .shot.term:hover > img { transform: none; }
+
+  .pill, .more summary { transition: transform 260ms cubic-bezier(0.22, 0.85, 0.3, 1), background-color 200ms ease, filter 200ms ease; }
+  .pill:hover { transform: translateY(-2px); }
+  .more summary:hover { transform: translateY(-1px); }
+
+  .field { transition: transform 900ms cubic-bezier(0.22, 0.85, 0.3, 1); }
+
+
+  /* --- flow as type on a rail, not boxes and arrows --- */
+  .rail { margin: 0; }
+  .rail-track { position: relative; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; list-style: none; margin: 0; padding: 0; }
+  .rail-track::before { content: ""; position: absolute; left: 6%; right: 6%; top: 0.44rem; height: 1px; background: linear-gradient(90deg, transparent, rgba(18,22,27,0.16) 8%, rgba(18,22,27,0.16) 92%, transparent); }
+  .stop { position: relative; padding-right: 1.25rem; min-width: 0; }
+  .stop .dot { position: relative; z-index: 1; display: block; width: 0.55rem; height: 0.55rem; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1.5px rgba(18,22,27,0.22); margin-bottom: 1.15rem; }
+  .stop.key .dot { background: var(--hue); box-shadow: 0 0 0 1.5px var(--hue), 0 0 0 5px var(--hue-lo); }
+  .stop .n { display: block; font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.14em; color: var(--ink-3); margin-bottom: 0.3rem; }
+  .stop b { display: block; font-family: var(--serif); font-weight: 600; font-size: clamp(0.95rem, 1.35vw, 1.18rem); line-height: 1.15; letter-spacing: -0.015em; text-wrap: balance; }
+  .stop.key b { color: var(--hue); }
+  .stop em { display: block; font-style: normal; font-size: 0.8125rem; line-height: 1.4; color: var(--ink-2); margin-top: 0.35rem; }
+
+  .rail-branch { position: relative; margin-top: 1.6rem; padding-left: calc(66.6667% + 0.1rem); }
+  .rail-branch::before { content: ""; position: absolute; left: calc(66.6667% - 1.1rem); top: -1.5rem; width: 1px; height: 2.4rem; background: repeating-linear-gradient(180deg, rgba(18,22,27,0.26) 0 4px, transparent 4px 9px); }
+  .rail-branch b { display: block; font-family: var(--serif); font-weight: 600; font-size: 1.05rem; color: var(--ink-2); }
+  .rail-branch em { display: block; font-style: normal; font-size: 0.8125rem; color: var(--ink-3); margin-top: 0.25rem; }
+
+  .pulse { position: absolute; top: 0.3rem; left: 6%; width: 0.82rem; height: 0.82rem; border-radius: 50%; background: var(--hue); opacity: 0; }
+  body.motion .pulse { animation: railRun 7s cubic-bezier(0.5, 0, 0.5, 1) infinite; }
+  @keyframes railRun {
+    0%   { left: 6%;  opacity: 0; transform: scale(0.6); }
+    6%   { opacity: 1; transform: scale(1); }
+    82%  { left: 90%; opacity: 1; transform: scale(1); }
+    92%, 100% { left: 90%; opacity: 0; transform: scale(0.6); }
+  }
+
+  @media (max-width: 1100px) {
+    .rail-track { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2.25rem 1.25rem; }
+    .rail-track::before { display: none; }
+    .pulse { display: none; }
+    .rail-branch { padding-left: 0; }
+    .rail-branch::before { display: none; }
+  }
+  @media (max-width: 620px) {
+    .rail-track { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.75rem 1rem; }
+    .rail-track::before { display: none; }
+    .stop .dot { margin-bottom: 0.75rem; }
+    .rail-branch { padding-left: 0; margin-top: 1.9rem; }
+    .rail-branch::before { display: none; }
+    .pulse { display: none; }
+  }
+
+
+  .handfig .hand-row { display: grid; grid-template-columns: minmax(0, 0.42fr) minmax(0, 0.58fr); gap: clamp(1.5rem, 4vw, 3.5rem); align-items: center; }
+  .handfig .hand { width: 100%; max-width: 292px; height: auto; margin-inline: auto; display: block; overflow: visible; }
+  /* shaded so the hand reads as a volume, with the landmark overlay on top of it */
+  .hand .s0 { stop-color: var(--hue); stop-opacity: 0.09; }
+  .hand .s1 { stop-color: var(--hue); stop-opacity: 0.2; }
+  .hand .s2 { stop-color: var(--hue); stop-opacity: 0.4; }
+  .hand .cast { fill: var(--ink); opacity: 0.11; }
+  .hand .skin { fill: url(#hskin); }
+  .hand .rim { fill: none; stroke: var(--hue); stroke-opacity: 0.5; stroke-width: 1.2; stroke-linejoin: round; }
+  .hand .sh { fill: none; stroke: var(--hue); stroke-opacity: 0.32; stroke-linecap: round; }
+  .hand .ao { fill: var(--hue); fill-opacity: 0.19; stroke: var(--hue); stroke-opacity: 0.19; }
+  .hand .hi { fill: none; stroke: var(--paper); stroke-opacity: 0.5; stroke-linecap: round; }
+  .hand .bones { fill: none; stroke: var(--paper); stroke-opacity: 0.8; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .hand .pts { fill: var(--hue); stroke: var(--paper); stroke-width: 1.4; }
+  .routes { display: grid; gap: 1.4rem; }
+  .route-lead { margin: 0 0 0.2rem; font-size: 0.9375rem; line-height: 1.5; color: var(--ink-2); max-width: 40ch; }
+  .route { padding-left: 1.1rem; border-left: 2px solid var(--hue-lo); }
+  .route .n { display: block; font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.1em; color: var(--ink-3); margin-bottom: 0.3rem; }
+  .route b { display: block; font-family: var(--serif); font-weight: 600; font-size: clamp(1.1rem, 1.8vw, 1.45rem); letter-spacing: -0.015em; color: var(--hue); }
+  .route em { display: block; font-style: normal; font-size: 0.9375rem; color: var(--ink-2); margin-top: 0.2rem; }
+  @media (max-width: 760px) { .handfig .hand-row { grid-template-columns: 1fr; } }
+
+  /* ---- plots ---- */
+  .plots { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: clamp(2.5rem, 5vw, 4.5rem); margin-top: clamp(3rem, 6vw, 5rem); }
+  .plot { margin: 0; }
+  .plot h3 { font-size: clamp(1.25rem, 2vw, 1.6rem); line-height: 1.2; margin: 0.6rem 0 0.4rem; }
+  .plot .sub { font-size: 0.9375rem; line-height: 1.5; color: var(--ink-2); margin: 0 0 1.2rem; max-width: 46ch; }
+  .plot svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .plot .foot { margin: 1.1rem 0 0; font-size: 0.9375rem; line-height: 1.5; color: var(--ink-2); max-width: 46ch; }
+  .plot .foot b { color: var(--hue); font-weight: 700; }
+  .ax, .tk { stroke: rgba(18, 22, 27, 0.16); stroke-width: 1; }
+  .tklbl { font-family: var(--sans); font-size: 12.5px; font-weight: 500; fill: var(--ink-3); }
+  .dumb { stroke: var(--hue); stroke-width: 6; stroke-linecap: round; opacity: 0.2; }
+  .d-from { fill: #fff; stroke: rgba(18, 22, 27, 0.3); stroke-width: 3; }
+  .d-to { fill: var(--hue); }
+  .vlbl { font-family: var(--serif); font-size: 22px; font-weight: 600; letter-spacing: -0.02em; fill: var(--ink); }
+  .vlbl.mut { fill: var(--ink-3); font-weight: 500; }
+  .dlbl { font-family: var(--sans); font-size: 13px; font-weight: 700; letter-spacing: 0.01em; fill: var(--hue); }
+
+  /* ---- where the rows went: a flow that loses a stream at every stage ---- */
+  .sank-row { display: grid; grid-template-columns: minmax(0, 1.42fr) minmax(206px, 0.9fr); gap: clamp(1.6rem, 3.2vw, 3.2rem); align-items: center; }
+  .sank .river { fill: var(--hue); fill-opacity: 0.16; stroke: var(--hue); stroke-opacity: 0.55; stroke-width: 1.1; }
+  .sank .drop { stroke: rgba(18, 22, 27, 0.2); stroke-width: 1; }
+  .sank .d1 { fill: rgba(18, 22, 27, 0.34); }
+  .sank .d2 { fill: rgba(18, 22, 27, 0.2); }
+  .sank .d3 { fill: rgba(18, 22, 27, 0.1); }
+  .sank .stg { font-family: var(--mono); font-size: 12px; fill: var(--ink-3); }
+  .sank .tick { stroke: rgba(18, 22, 27, 0.22); stroke-width: 1; }
+  .sank-key { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.15rem; }
+  .sank-key li { display: flex; gap: 0.8rem; align-items: flex-start; }
+  .sank-key i { flex: 0 0 11px; width: 11px; height: 11px; border-radius: 2px; background: var(--sw); margin-top: 0.5em; }
+  .sank-key .n { display: block; font-family: var(--serif); font-weight: 600; font-size: clamp(1.2rem, 1.8vw, 1.55rem); letter-spacing: -0.022em; line-height: 1; }
+  .sank-key .t { display: block; font-size: 0.875rem; line-height: 1.4; color: var(--ink-2); margin-top: 0.3rem; }
+  .sank-key li:first-child .n { color: var(--hue); }
+  @media (max-width: 880px) { .sank-row { grid-template-columns: 1fr; } .sank-key { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.4rem 1.6rem; } }
+  @media (max-width: 470px) { .sank-key { grid-template-columns: 1fr; } }
+
+  /* ---- diagrams ---- */
+  figure.dgm { margin: 0; }
+  figure.dgm svg { display: block; width: 100%; max-width: 100%; height: auto; color: var(--ink); }
+  figure.dgm figcaption { font-size: 0.9375rem; line-height: 1.55; color: var(--ink-2); margin-top: 1.1rem; max-width: 58ch; }
+  figure.dgm figcaption b { color: var(--ink); font-weight: 600; }
+  .dgm .box { fill: #fff; stroke: rgba(18,22,27,0.13); stroke-width: 1; }
+  .dgm .box.key { fill: var(--hue-lo); stroke: rgba(27,63,160,0.22); }
+  .dgm .box.dead { fill: rgba(18,22,27,0.028); stroke: rgba(18,22,27,0.14); stroke-dasharray: 5 5; }
+  .dgm .lbl { font-family: var(--sans); font-size: 12px; font-weight: 600; fill: var(--ink); }
+  .dgm .lbl.sm { font-size: 10.5px; font-weight: 500; fill: var(--ink-2); }
+  .dgm .lbl.mut { fill: var(--ink-3); font-weight: 500; }
+  .dgm .lbl.acc { fill: var(--hue); }
+  .dgm .num { font-family: var(--mono); font-size: 10.5px; fill: var(--ink-2); }
+  .dgm .wire { stroke: rgba(18,22,27,0.2); stroke-width: 1.5; fill: none; }
+  .dgm .wire.acc { stroke: var(--hue); }
+  .dgm .wire.dead { stroke: rgba(18,22,27,0.18); stroke-dasharray: 5 5; }
+  .dgm .tok { fill: var(--hue); opacity: 0; }
+  .dgm .tok.drop { fill: #9aa8c8; }
+  body.motion .dgm .tok { opacity: 1; }
+
+  /* ---- work ---- */
+  .work { display: grid; gap: clamp(5rem, 11vw, 10rem); }
+  .case { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(2rem, 5vw, 4.5rem); align-items: center; }
+  .case.flip > .media { grid-column: 2; grid-row: 1; }
+  .case.flip > div:not(.media) { grid-column: 1; grid-row: 1; }
+  .case > figure.dgm, .case > figure.rail, .case > figure.plot { grid-column: 1 / -1; margin-top: clamp(2rem, 4vw, 3.25rem); }
+
+  /* imagery bleeds past the column edge instead of sitting in a bordered box */
+  .media { position: relative; }
+  .case:not(.flip) .media { margin-inline-start: calc(var(--gutter) * -0.7); }
+  .case.flip .media { margin-inline-end: calc(var(--gutter) * -0.7); }
+  .shot { position: relative; aspect-ratio: 16 / 10; max-width: 100%; border-radius: 26px; overflow: hidden; background: #fff; box-shadow: var(--soft); }
+  .shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .shot canvas { width: 100%; height: 100%; display: block; }
+  .shot.is-empty img { display: none; }
+  .shot.is-empty::after { content: attr(data-slot); position: absolute; inset: 0; display: grid; place-items: center; text-align: center; white-space: pre-line; padding: 1.25rem; border: 1px dashed rgba(18,22,27,0.16); border-radius: inherit; font-family: var(--mono); font-size: 0.6875rem; line-height: 2.1; color: var(--ink-3); }
+  .shot.term { aspect-ratio: auto; border-radius: 20px; }
+  .shot.term img { height: auto; object-fit: contain; }
+
+  .cap { font-size: 0.875rem; line-height: 1.55; color: var(--ink-2); margin: 1rem 0 0; max-width: 54ch; }
+  .cap b { color: var(--ink); font-weight: 600; }
+  .cap .flag { color: var(--hue); font-weight: 600; }
+
+  .case h3 { font-size: clamp(1.75rem, 3.6vw, 2.9rem); line-height: 1.07; margin: 1rem 0 0; max-width: 15ch; text-wrap: balance; }
+  .repo { display: inline-block; margin-top: 1.1rem; font-family: var(--mono); font-size: 0.8125rem; color: var(--hue); word-break: break-word; }
+  .repo:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .meta { font-size: 0.8125rem; color: var(--ink-3); margin-top: 0.75rem; }
+  .case .body { margin-top: 1.4rem; }
+
+  .won { display: inline-block; margin-left: 0.55rem; background: var(--hue-lo); color: var(--hue); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.3rem 0.7rem; border-radius: 999px; white-space: nowrap; }
+
+  /* facts: spaced lines, no rules, no grid cells */
+  .facts { margin-top: clamp(1.5rem, 3vw, 2.25rem); display: grid; gap: 0.85rem; }
+  .fact { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: 1.25rem; align-items: baseline; }
+  .fact dt { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-3); }
+  .fact dd { margin: 0; font-size: 0.9375rem; line-height: 1.6; color: var(--ink-2); }
+  .fact dd strong { color: var(--ink); font-weight: 600; }
+  @media (max-width: 560px) { .fact { grid-template-columns: 1fr; gap: 0.15rem; } }
+
+  .full-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(2rem, 5vw, 4.5rem); align-items: start; }
+  @media (max-width: 920px) {
+    .case, .full-head { grid-template-columns: 1fr; }
+    .case.flip > .media, .case.flip > div:not(.media) { grid-column: auto; grid-row: auto; }
+    .case:not(.flip) .media, .case.flip .media { margin-inline: 0; }
+  }
+
+  /* ---- stack: soft tags, no grid ---- */
+  .tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.7rem; }
+  .tag { font-size: 0.9375rem; padding: 0.45rem 0.95rem; border-radius: 999px; background: rgba(18,22,27,0.05); color: var(--ink); }
+  .tagsets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+             column-gap: clamp(2rem, 4vw, 4.5rem); align-items: start;
+             margin-top: clamp(2.25rem, 4vw, 3.25rem); }
+  .tagset { margin-bottom: clamp(1.5rem, 2.5vw, 2rem); }
+  @media (max-width: 720px) { .tagsets { grid-template-columns: 1fr; } }
+  .tagset h3 { font-family: var(--sans); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.17em; text-transform: uppercase; color: var(--ink-3); }
+
+  .nowlist { display: grid; gap: clamp(1.75rem, 3vw, 2.5rem); margin: 0; padding: 0; list-style: none; }
+  .nowlist .lead { font-family: var(--serif); font-weight: 600; font-size: clamp(1.2rem, 2.2vw, 1.6rem); line-height: 1.25; display: block; margin-bottom: 0.4rem; }
+  .nowlist li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                column-gap: clamp(2rem, 4vw, 4.5rem); align-items: baseline; }
+  .nowlist p { margin: 0; font-size: 1rem; line-height: 1.6; color: var(--ink-2); max-width: 46ch; }
+  @media (max-width: 720px) { .nowlist li { grid-template-columns: 1fr; } }
+
+  /* ---- contact ---- */
+  .reach { display: flex; flex-wrap: wrap; gap: 0.75rem 3.5rem; margin-top: clamp(2rem, 4vw, 3rem); }
+  .reach > div { min-width: 0; }
+  .reach .kicker { margin-bottom: 0.5rem; }
+  .reach .val { font-family: var(--serif); font-size: clamp(1.05rem, 2vw, 1.45rem); line-height: 1.35; word-break: break-word; user-select: all; }
+  .reach a.val { color: var(--hue); }
+  .reach a.val:hover { text-decoration: underline; text-underline-offset: 5px; }
+  .copy { margin-top: 0.6rem; display: inline-block; font-family: var(--sans); font-size: 0.75rem; font-weight: 600; color: var(--ink-2); background: rgba(18,22,27,0.05); border: 0; border-radius: 999px; padding: 0.4rem 0.9rem; cursor: pointer; transition: background-color 180ms ease, color 180ms ease; }
+  .copy:hover { background: var(--hue-lo); color: var(--hue); }
+
+  .colophon { margin-top: clamp(3.5rem, 7vw, 6rem); font-size: 0.875rem; line-height: 1.7; color: var(--ink-3); max-width: 70ch; }
+
+  /* ============ MOTION (opt-in via body.motion) ============ */
+
+
+  body.motion .dumb { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); transition: stroke-dashoffset 0.95s cubic-bezier(0.22, 0.85, 0.3, 1); }
+  body.motion .reveal .dumb { stroke-dashoffset: 0; }
+  body.motion .d-to { transform: scale(0); transform-box: fill-box; transform-origin: center; transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.55s; }
+  body.motion .reveal .d-to { transform: scale(1); }
+
+  body.motion .sank .river, body.motion .sank .drop { opacity: 0; transition: opacity 700ms ease; }
+  body.motion .reveal .sank .river, body.motion .reveal .sank .drop { opacity: 1; }
+  body.motion .sank .d3 { transition-delay: 110ms; }
+  body.motion .sank .d2 { transition-delay: 200ms; }
+  body.motion .sank .d1 { transition-delay: 290ms; }
+  body.motion .sank-key li { opacity: 0; transform: translateY(9px); transition: opacity 560ms ease, transform 560ms cubic-bezier(0.22, 0.85, 0.3, 1); }
+  body.motion .reveal .sank-key li { opacity: 1; transform: none; }
+  body.motion .sank-key li:nth-child(2) { transition-delay: 90ms; }
+  body.motion .sank-key li:nth-child(3) { transition-delay: 180ms; }
+  body.motion .sank-key li:nth-child(4) { transition-delay: 270ms; }
+
+  @keyframes lmPulse { 0%, 100% { r: 3.4; opacity: 0.45; } 50% { r: 5; opacity: 1; } }
+  body.motion .lm { animation: lmPulse 2.6s ease-in-out infinite; }
+
+  /* a short spring on click: physical, not decorative */
+  body.motion .rise { opacity: 0; transform: translateY(14px); transition: opacity 720ms ease, transform 720ms cubic-bezier(0.22, 0.85, 0.3, 1); }
+  body.motion .rise.seen { opacity: 1; transform: none; }
+
+  @keyframes dtIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
+  body.motion .more[open] .dt-in { animation: dtIn 320ms cubic-bezier(0.22, 0.85, 0.3, 1); }
+
+  @keyframes nudge {
+    0%   { transform: scale(1) rotate(0deg); }
+    24%  { transform: scale(0.981) rotate(-0.45deg); }
+    54%  { transform: scale(1.013) rotate(0.32deg); }
+    80%  { transform: scale(0.996) rotate(-0.1deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+  body.motion .shot.nudge, body.motion .face.nudge { animation: nudge 540ms cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+  .shot, .face { will-change: transform; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="ambient" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+
+<div class="nav">
+  <div class="nav-in">
+    <span class="brand">Filipp Lotsmanov</span>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="#results">Results</a>
+      <a href="#work">Work</a>
+      <a href="#stack">Stack</a>
+    </nav>
+    <a class="pill solid" href="#contact">Get in touch</a>
+  </div>
+</div>
+
+<main id="main">
+
+  <section class="hero">
+    <div class="field" aria-hidden="true" style="width:56vw;height:56vw;max-width:780px;max-height:780px;right:-14vw;top:-22vw;background:var(--forest-lo);opacity:.95"></div>
+    <div class="field" aria-hidden="true" style="width:34vw;height:34vw;max-width:460px;max-height:460px;left:-10vw;bottom:-14vw;background:var(--warm-lo);opacity:.85"></div>
+
+    <div class="wrap">
+      <div class="hero-grid">
+        <div>
+          <h1 class="display">The model is the easy <span class="em">half</span></h1>
+          <p class="lede">Third-year Applied Data Science &amp; AI at Breda University of Applied Sciences. Segmentation and sequence models, and the plumbing that serves them.</p>
+          <div class="hero-actions">
+            <a class="pill solid" href="#work">See the work</a>
+            <a class="pill" href="https://github.com/filipp-lotsmanov/resume/blob/main/resume.pdf" target="_blank" rel="noopener">Resume</a>
+            <a class="pill" href="https://github.com/filipp-lotsmanov" target="_blank" rel="noopener">GitHub</a>
+          </div>
+        </div>
+        <div class="face">
+          <img src="assets/portrait.jpg" alt="Filipp Lotsmanov" onerror="this.parentElement.classList.add('is-empty')">
+        </div>
+      </div>
+
+      <div class="creds">
+        <span class="cr hi"><b>BrabantHack 2026</b> <span>DEMCON Deep Tech, won</span></span>
+        <span class="cr"><b>HERE Technologies</b> <span>hackathon challenge track</span></span>
+        <span class="cr"><b>NPEC</b> <span>Netherlands Plant Eco-phenotyping Centre</span></span>
+        <span class="cr"><b>Airflow &rarr; Azure ML</b> <span>champion-gated retraining</span></span>
+        <span class="cr"><b>BUas</b> <span>GPA 8.5 / 10</span></span>
+        <span class="cr"><b>Now</b> <span>calibration &amp; selective prediction for HTR</span></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="band wash" id="results">
+    <div class="wrap">
+      <div class="head">
+        <h2 class="title">Measured on sets the models never saw.</h2>
+        <p class="lede">Six numbers, each naming its evaluation set.</p>
+      </div>
+
+      <div class="figures">
+        <div class="fig" style="--hue:var(--forest);--hue-lo:var(--forest-lo)"><span class="n">0.8371</span><span class="k">F1</span><span class="d">Root tissue segmentation, U-Net</span><span class="s">20,512 held-out test patches, split at source-image level</span></div>
+        <div class="fig" style="--hue:var(--forest);--hue-lo:var(--forest-lo)"><span class="n">0.7199</span><span class="k">IoU</span><span class="d">Same model, same run</span><span class="s">20,512 held-out test patches</span></div>
+        <div class="fig" style="--hue:var(--forest);--hue-lo:var(--forest-lo)"><span class="n">10.7%</span><span class="k">sMAPE · from 37.6%</span><span class="d">Root-length estimation</span><span class="s">Kaggle private leaderboard</span></div>
+        <div class="fig" style="--hue:var(--indigo);--hue-lo:var(--indigo-lo)"><span class="n">0.626</span><span class="k">IoU · winning entry</span><span class="d">Off-screen pedestrian localisation</span><span class="s">Hidden leaderboard test set</span></div>
+        <div class="fig" style="--hue:var(--forest);--hue-lo:var(--forest-lo)"><span class="n">0.646</span><span class="k">mm</span><span class="d">Mean pipette positioning error</span><span class="s">50 targets on an Opentrons OT-2</span></div>
+        <div class="fig" style="--hue:var(--sienna);--hue-lo:var(--sienna-lo)"><span class="n">5.2</span><span class="k">MB peak heap</span><span class="d">Streaming ETL, memory flat in file size</span><span class="s">2.3 GB / 27.6M records, insert-bound</span></div>
+      </div>
+
+      <div class="plots">
+        <figure class="plot js-reveal" style="--hue:var(--forest);--hue-lo:var(--forest-lo)">
+          <p class="kicker" style="color:var(--hue)">autonomous-root-inoculation</p>
+          <h3>Fewer moving parts, lower error.</h3>
+          <p class="sub">sMAPE on the Kaggle private leaderboard, drawn on the full 0–40% scale. Lower is better.</p>
+          <svg viewBox="0 0 640 122" role="img" aria-label="sMAPE fell from 37.6 percent to 10.7 percent, a drop of 26.9 percentage points, on a 0 to 40 percent scale.">
+            <line class="ax" x1="40" y1="90" x2="612" y2="90"/>
+            <line class="tk" x1="40" y1="90" x2="40" y2="95"/>
+            <text class="tklbl" x="40" y="110" text-anchor="start">0%</text>
+            <line class="tk" x1="183" y1="90" x2="183" y2="95"/>
+            <text class="tklbl" x="183" y="110" text-anchor="middle">10</text>
+            <line class="tk" x1="326" y1="90" x2="326" y2="95"/>
+            <text class="tklbl" x="326" y="110" text-anchor="middle">20</text>
+            <line class="tk" x1="469" y1="90" x2="469" y2="95"/>
+            <text class="tklbl" x="469" y="110" text-anchor="middle">30</text>
+            <line class="tk" x1="612" y1="90" x2="612" y2="95"/>
+            <text class="tklbl" x="612" y="110" text-anchor="end">40%</text>
+            <line class="dumb" x1="578" y1="54" x2="193" y2="54" style="--len:385"/>
+            <circle class="d-from" cx="578" cy="54" r="9"/>
+            <circle class="d-to" cx="193" cy="54" r="9"/>
+            <text class="vlbl mut" x="578" y="34" text-anchor="middle">37.6%</text>
+            <text class="vlbl" x="193" y="34" text-anchor="middle">10.7%</text>
+            <text class="dlbl" x="386" y="76" text-anchor="middle">&minus;26.9 pp from a simpler pipeline</text>
+          </svg>
+          <p class="foot">The plants sit in fixed positions and the dish never moves, so adaptive detection solved a problem this dataset did not have.</p>
+        </figure>
+
+        <figure class="plot js-reveal" style="--hue:var(--sienna);--hue-lo:var(--sienna-lo)">
+          <p class="kicker" style="color:var(--hue)">go-etl-pipeline</p>
+          <h3>Memory that ignores the file.</h3>
+          <p class="sub">Bytes read against bytes resident. Three orders of magnitude apart, so the axis is logarithmic.</p>
+          <svg viewBox="0 0 640 122" role="img" aria-label="On a logarithmic axis from 1 megabyte to 10 gigabytes, peak resident heap is 5.2 megabytes while 2.3 gigabytes is read.">
+            <line class="ax" x1="40" y1="90" x2="612" y2="90"/>
+            <line class="tk" x1="40" y1="90" x2="40" y2="95"/>
+            <text class="tklbl" x="40" y="110" text-anchor="start">1 MB</text>
+            <line class="tk" x1="183" y1="90" x2="183" y2="95"/>
+            <text class="tklbl" x="183" y="110" text-anchor="middle">10 MB</text>
+            <line class="tk" x1="326" y1="90" x2="326" y2="95"/>
+            <text class="tklbl" x="326" y="110" text-anchor="middle">100 MB</text>
+            <line class="tk" x1="469" y1="90" x2="469" y2="95"/>
+            <text class="tklbl" x="469" y="110" text-anchor="middle">1 GB</text>
+            <line class="tk" x1="612" y1="90" x2="612" y2="95"/>
+            <text class="tklbl" x="612" y="110" text-anchor="end">10 GB</text>
+            <line class="dumb" x1="142" y1="54" x2="521" y2="54" style="--len:379"/>
+            <circle class="d-to" cx="142" cy="54" r="9"/>
+            <circle class="d-from" cx="521" cy="54" r="9"/>
+            <text class="vlbl" x="142" y="34" text-anchor="middle">5.2 MB</text>
+            <text class="vlbl mut" x="521" y="34" text-anchor="middle">2.3 GB</text>
+            <text class="dlbl" x="331" y="76" text-anchor="middle">heap holds flat while the file streams past</text>
+          </svg>
+          <p class="foot">Log scale, because on a linear one <b>5.2 MB is a third of a pixel</b> beside 2.3 GB. The CSV is consumed row by row, so the heap never learns how large the file is.</p>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="work">
+    <div class="field" aria-hidden="true" style="width:44vw;height:44vw;max-width:620px;max-height:620px;left:-16vw;top:18vw;background:var(--indigo-lo);opacity:.85"></div>
+    <div class="field" aria-hidden="true" style="width:40vw;height:40vw;max-width:560px;max-height:560px;right:-14vw;top:120vw;background:var(--sienna-lo);opacity:.8"></div>
+
+    <div class="wrap">
+      <div class="head">
+        <h2 class="title">Six projects, end to end.</h2>
+        <p class="lede">Built for external clients or to hackathon deadlines; two are solo work.</p>
+      </div>
+
+      <div class="work">
+
+        <!-- 01 -->
+        <article class="case" style="--hue:var(--forest);--hue-lo:var(--forest-lo)">
+          <div class="media">
+            <div class="shot"><canvas id="root-schematic" width="1200" height="750" role="img" aria-label="Three plates: seedlings as imaged, the predicted mask overlaid, and the skeletonised centreline with the longest root path marked."></canvas></div>
+            <p class="cap"><span class="flag">Schematic — not model output.</span> Plate imagery is NPEC's; this draws the three stages the pipeline runs.</p>
+          </div>
+          <div>
+            <p class="kicker">01 / 06 · Team capstone, five people</p>
+            <h3>Two gates decide what reaches production.</h3>
+            <a class="repo" href="https://github.com/filipp-lotsmanov/root-inoculation-mlops" target="_blank" rel="noopener">github.com/filipp-lotsmanov/root-inoculation-mlops</a>
+            <p class="meta">NPEC · Airflow · Azure ML · U-Net</p>
+            <p class="result"><strong>0.8371 F1, 0.7199 IoU</strong> on 20,512 held-out test patches.</p>
+            <details class="more">
+              <summary>How it works</summary>
+              <div class="dt-in">
+              <p class="body">Researchers correct predictions in the UI. A daily DAG merges the corrections into training data <strong>while keeping the test set frozen</strong>, retrains, and puts the candidate through two independent gates.</p>
+              <dl class="facts">
+              <div class="fact"><dt>Scope</dt><dd>Airflow orchestration, the Azure ML job layer, the feedback flywheel and the promotion gate.</dd></div>
+              <div class="fact"><dt>Limitation</dt><dd>The university-provisioned Azure and on-premise environments are decommissioned; the local Compose stack is the reproducible path.</dd></div>
+            </dl>
+              </div>
+            </details>
+          </div>
+
+          <figure class="rail">
+            <ol class="rail-track">
+              <li class="stop"><span class="dot"></span><span class="n">01</span><b>Corrections</b><em>researchers flag predictions in the UI</em></li>
+              <li class="stop"><span class="dot"></span><span class="n">02</span><b>Retrain</b><em>merged in, test set frozen</em></li>
+              <li class="stop key"><span class="dot"></span><span class="n">03</span><b>F1 gate</b><em>clears the threshold on held-out</em></li>
+              <li class="stop"><span class="dot"></span><span class="n">04</span><b>Registry</b><em>the candidate is versioned</em></li>
+              <li class="stop key"><span class="dot"></span><span class="n">05</span><b>Champion gate</b><em>must beat what is already serving</em></li>
+              <li class="stop key"><span class="dot"></span><span class="n">06</span><b>Traffic</b><em>only now does it serve</em></li>
+              <span class="pulse" aria-hidden="true"></span>
+            </ol>
+            <p class="rail-branch"><b>Registered, never promoted</b><em>clears 03, loses 05</em></p>
+            <figcaption>Passing an offline threshold is not the same as being better than production. <b>A candidate can enter the registry and never take traffic.</b></figcaption>
+          </figure>
+        </article>
+
+        <!-- 02 -->
+        <article class="case flip" style="--hue:var(--forest);--hue-lo:var(--forest-lo)">
+          <div class="media">
+            <div class="shot" data-slot="assets/ot2.png&#10;16 : 10">
+              <img src="assets/ot2.png" alt="An Opentrons OT-2 pipetting robot with a petri dish loaded." onerror="this.parentElement.classList.add('is-empty')">
+            </div>
+            <p class="cap">The Opentrons OT-2 the pipeline targets.</p>
+          </div>
+          <div>
+            <p class="kicker">02 / 06 · Individual</p>
+            <h3>Segmentation that drives a pipette to 0.646 mm.</h3>
+            <a class="repo" href="https://github.com/filipp-lotsmanov/autonomous-root-inoculation" target="_blank" rel="noopener">github.com/filipp-lotsmanov/autonomous-root-inoculation</a>
+            <p class="meta">U-Net · skeletonisation · PID · Opentrons OT-2</p>
+            <p class="result"><strong>10.7% sMAPE</strong> on the Kaggle private leaderboard; <strong>0.646 mm</strong> mean positioning across 50 targets.</p>
+            <details class="more">
+              <summary>How it works</summary>
+              <div class="dt-in">
+              <p class="body">Segmentation finds root tips, skeletonisation measures length, an affine transform maps pixels to robot coordinates, and a PID controller drives the pipette. The first pipeline scored 37.6% sMAPE; the rewrite scored 10.7%, and it was <strong>mostly subtraction</strong>.</p>
+              <dl class="facts">
+              <div class="fact"><dt>Limitation</dt><dd>PID and PPO were measured on different simulators, so their error figures are not directly comparable.</dd></div>
+            </dl>
+              </div>
+            </details>
+          </div>
+        </article>
+
+        <!-- 03 -->
+        <article class="case" style="--hue:var(--indigo);--hue-lo:var(--indigo-lo)">
+          <div class="media">
+            <div class="shot">
+              <img src="assets/shadow-prediction.png" width="714" height="446" alt="Prediction panel: side Left at 100% confidence, direction Abstain at 50%, and a box drawn left of the road scene, outside the image." onerror="this.parentElement.classList.add('is-empty')">
+            </div>
+            <div class="shot" style="margin-top:1.1rem">
+              <img src="assets/demo.gif" alt="Screen recording of the Shadow Detection web app." onerror="this.parentElement.classList.add('is-empty')">
+            </div>
+            <p class="cap">Predicted box spans <b>x −186.3 to −114.0 px</b> — entirely left of zero, because the person is not in the picture.</p>
+          </div>
+          <div>
+            <p class="kicker">03 / 06 · Team of three <span class="won">BrabantHack 2026 winner</span></p>
+            <h3>Find the person who isn't in the frame.</h3>
+            <a class="repo" href="https://github.com/filipp-lotsmanov/shadow-detection" target="_blank" rel="noopener">github.com/filipp-lotsmanov/shadow-detection</a>
+            <p class="meta">DEMCON Deep Tech · with Oleksii Krasnoshtanov and Danil Sysenko</p>
+            <figure class="plot js-reveal" style="margin-top:1.9rem">
+              <p class="kicker" style="color:var(--hue)">Geometric-feature ablation</p>
+              <svg viewBox="0 0 640 122" role="img" aria-label="IoU rose from about 0.57 to about 0.62 when 19 geometric features were fused with the ResNet-50 embedding, on a full 0 to 1 scale.">
+                <line class="ax" x1="40" y1="90" x2="612" y2="90"/>
+                <line class="tk" x1="40" y1="90" x2="40" y2="95"/>
+            <text class="tklbl" x="40" y="110" text-anchor="start">0</text>
+            <line class="tk" x1="183" y1="90" x2="183" y2="95"/>
+            <text class="tklbl" x="183" y="110" text-anchor="middle">0.25</text>
+            <line class="tk" x1="326" y1="90" x2="326" y2="95"/>
+            <text class="tklbl" x="326" y="110" text-anchor="middle">0.5</text>
+            <line class="tk" x1="469" y1="90" x2="469" y2="95"/>
+            <text class="tklbl" x="469" y="110" text-anchor="middle">0.75</text>
+            <line class="tk" x1="612" y1="90" x2="612" y2="95"/>
+            <text class="tklbl" x="612" y="110" text-anchor="end">1.0</text>
+                <line class="dumb" x1="366" y1="54" x2="395" y2="54" style="--len:29"/>
+                <circle class="d-from" cx="366" cy="54" r="9"/>
+                <circle class="d-to" cx="395" cy="54" r="9"/>
+                <text class="vlbl mut" x="352" y="58" text-anchor="end">&asymp;0.57</text>
+                <text class="vlbl" x="409" y="58" text-anchor="start">&asymp;0.62</text>
+                <text class="dlbl" x="380" y="80" text-anchor="middle">+0.05 IoU &mdash; the single largest jump in the project</text>
+              </svg>
+              <p class="foot">Drawn on the full 0&ndash;1 scale rather than a zoomed one, which is why a decisive gain looks as small as it is.</p>
+            </figure>
+
+            <p class="result"><strong>IoU 0.626</strong> on the hidden leaderboard — the winning submission.</p>
+
+            <details class="more">
+              <summary>How it works</summary>
+              <div class="dt-in">
+              <p class="body">Only the shadow reaches the image. The x-distribution is bimodal, so the target is decomposed: a classifier picks the side, a regressor learns offsets from that edge, and 19 geometric features fuse with the ResNet-50 embedding.</p>
+
+              <dl class="facts">
+              <div class="fact"><dt>Scope</dt><dd>The three-head architecture, the 19 features, flip-aware augmentation and the TTA inference path.</dd></div>
+              <div class="fact"><dt>Limitation</dt><dd>The direction head abstains on every input, and training data is entirely synthetic.</dd></div>
+            </dl>
+              </div>
+            </details>
+          </div>
+        </article>
+
+        <!-- 04 -->
+        <article style="--hue:var(--sienna);--hue-lo:var(--sienna-lo)">
+          <div class="full-head">
+            <div>
+              <p class="kicker">04 / 06 · Personal</p>
+              <h3 style="font-family:var(--serif);font-weight:600;font-size:clamp(1.75rem,3.6vw,2.9rem);line-height:1.07;margin:1rem 0 0;max-width:15ch;letter-spacing:-0.022em">2.3 GB through a 4 MB heap, and an answer for every missing row.</h3>
+              <a class="repo" href="https://github.com/filipp-lotsmanov/go-etl-pipeline" target="_blank" rel="noopener">github.com/filipp-lotsmanov/go-etl-pipeline</a>
+              <p class="meta">Go · channels · worker pool · PostgreSQL</p>
+            </div>
+            <p class="body" style="margin-top:0">A staged pipeline wired by channels, reading row by row so memory is independent of file size. Every row is attributed to the stage that consumed it, and <strong>a run whose ledger does not balance exits non-zero</strong> rather than reporting success.</p>
+          </div>
+
+          <figure class="plot js-reveal" style="margin-top:clamp(2.5rem,5vw,4rem)">
+            <p class="kicker" style="color:var(--hue)">Where 500,000 rows went &middot; one run, to scale</p>
+            <div class="sank-row">
+              <svg class="sank" viewBox="0 0 600 196" role="img" aria-label="Of 500,000 rows read, 13,378 were unparseable, 26,642 failed validation, 138,001 were duplicates already present and 321,979 were inserted. The stream narrows at each stage.">
+                <text class="stg" x="0" y="15">read</text>
+                <line class="tick" x1="150" y1="7" x2="150" y2="26"/><text class="stg" x="156" y="15">parse</text>
+                <line class="tick" x1="300" y1="7" x2="300" y2="26"/><text class="stg" x="306" y="15">validate</text>
+                <line class="tick" x1="450" y1="7" x2="450" y2="26"/><text class="stg" x="456" y="15">dedupe</text>
+                <path class="drop d1" d="M 150 142.789 C 190.0 142.789 190.0 181.789 230 181.789 L 600 181.789 L 600 185.0 L 230 185.0 C 190.0 185.0 190.0 146.0 150 146.0 Z"/>
+                <path class="drop d2" d="M 300 136.395 C 340.0 136.395 340.0 162.395 380 162.395 L 600 162.395 L 600 168.789 L 380 168.789 C 340.0 168.789 340.0 142.789 300 142.789 Z"/>
+                <path class="drop d3" d="M 450 103.275 C 490.0 103.275 490.0 116.275 530 116.275 L 600 116.275 L 600 149.395 L 530 149.395 C 490.0 149.395 490.0 136.395 450 136.395 Z"/>
+                <path class="river" d="M 0 26.0 L 600 26.0 L 600 103.275 L 450 103.275 C 410.0 103.275 410.0 136.395 370 136.395 L 300 136.395 C 260.0 136.395 260.0 142.789 220 142.789 L 150 142.789 C 110.0 142.789 110.0 146.0 70 146.0 L 0 146.0 Z"/>
+              </svg>
+              <ul class="sank-key">
+                <li style="--sw:var(--hue)"><i></i><div><span class="n">321,979</span><span class="t">inserted &middot; 64.40%</span></div></li>
+                <li style="--sw:rgba(18,22,27,0.1)"><i></i><div><span class="n">138,001</span><span class="t">duplicates skipped &middot; 27.60%</span></div></li>
+                <li style="--sw:rgba(18,22,27,0.2)"><i></i><div><span class="n">26,642</span><span class="t">failed validation &middot; 5.33%</span></div></li>
+                <li style="--sw:rgba(18,22,27,0.34)"><i></i><div><span class="n">13,378</span><span class="t">unparseable &middot; 2.68%</span></div></li>
+              </ul>
+            </div>
+            <p class="foot">Every row is attributed to the stage that consumed it. The four outcomes sum to <b>exactly 500,000</b>, and the validation slice balances too: 13,420 bad distance + 6,557 negative fare + 6,665 bad passenger count = 26,642. A run whose ledger does not balance exits non-zero.</p>
+          </figure>
+
+          <div class="shot term" style="margin-top:clamp(2rem,4vw,3rem)">
+            <img src="assets/etl-run.webp" width="2000" height="618" alt="Terminal output: heap-in-use lines between 2.79 and 4.75 MB, then the load-complete ledger, exit code 0." onerror="this.parentElement.classList.add('is-empty')">
+          </div>
+          <p class="cap">A <b>500,000-row test run</b>; the 2.3 GB benchmark above is a separate run. Heap holds between <b>2.79 and 4.75 MB</b> throughout. Reading the throughput field precisely: <span class="code">records_per_sec=13525</span> counts inserted rows (321,979 &divide; 23.806 s); rows read per second was 21,003.</p>
+              <p class="result">Flat <strong>2.8–5.2 MB</strong> heap across a 2.3 GB, 27.6M-record file at roughly 41,000 records/sec.</p>
+
+          <details class="more">
+            <summary>How it works</summary>
+            <div class="dt-in">
+            <dl class="facts">
+            <div class="fact"><dt>Limitation</dt><dd>The 5.7× enrichment figure needs a source constant raised, so reproducing it means rebuilding.</dd></div>
+          </dl>
+            </div>
+          </details>
+        </article>
+
+        <!-- 05 -->
+        <article class="case flip" style="--hue:var(--plum);--hue-lo:var(--plum-lo)">
+          <div class="media">
+            <div class="shot" data-slot="assets/signlang.jpg&#10;16 : 10">
+              <img src="assets/signlang.jpg" width="1264" height="790" alt="The sign-language app predicting the letter B at 96.8 per cent confidence from a live webcam frame." onerror="this.parentElement.classList.add('is-empty')">
+            </div>
+            <p class="cap">B at <b>96.8%</b>, live in the browser.</p>
+          </div>
+          <div>
+            <p class="kicker">05 / 06 · Team of three</p>
+            <h3>Two models, one socket, real time in the browser.</h3>
+            <a class="repo" href="https://github.com/filipp-lotsmanov/sign-language" target="_blank" rel="noopener">github.com/filipp-lotsmanov/sign-language</a>
+            <p class="meta">MediaPipe · FastAPI · WebSocket · ResidualMLP + BiLSTM</p>
+            <p class="result">Dual-model routing over one socket, with <strong>21 landmarks</strong> extracted client-side per frame.</p>
+            <details class="more">
+              <summary>How it works</summary>
+              <div class="dt-in">
+              <p class="body">MediaPipe extracts 21 hand landmarks client-side; frames stream to FastAPI over WebSocket. Static and dynamic letters dispatch to <strong>different models</strong>.</p>
+              <dl class="facts">
+              <div class="fact"><dt>Limitation</dt><dd>Augmentation happens before the split, so near-duplicate frames leak across train, validation and test.</dd></div>
+            </dl>
+              </div>
+            </details>
+          </div>
+
+          <figure class="dgm handfig">
+            <div class="hand-row">
+                <svg class="hand" viewBox="0 0 260 334" role="img" aria-label="An open hand, shaded, with the twenty-one MediaPipe landmarks marked: the wrist, and four joints on each of the five digits.">
+                  <defs>
+                    <linearGradient id="hskin" x1="0.08" y1="0.02" x2="0.92" y2="0.98">
+                      <stop class="s0" offset="0"/>
+                      <stop class="s1" offset="0.46"/>
+                      <stop class="s2" offset="1"/>
+                    </linearGradient>
+                    <filter id="hsoft" x="-35%" y="-25%" width="170%" height="150%"><feGaussianBlur stdDeviation="4"/></filter>
+                    <filter id="hsharp" x="-35%" y="-25%" width="170%" height="150%"><feGaussianBlur stdDeviation="4.6"/></filter>
+                    <filter id="hcast" x="-40%" y="-30%" width="180%" height="160%"><feGaussianBlur stdDeviation="7"/></filter>
+                    <clipPath id="hclip"><path d="M 108.0 304.8 C 104.9 300.7 96.4 288.5 89.6 280.2 C 82.7 271.9 73.6 262.0 67.0 255.1 C 60.5 248.2 55.6 243.8 50.1 238.6 C 44.6 233.3 36.6 225.9 33.9 223.4 C 24.0 215.3 36.2 200.5 46.1 208.6 C 49.1 210.7 57.4 217.0 63.9 221.4 C 70.4 225.8 76.9 228.8 85.0 234.9 C 93.0 241.0 107.9 254.0 112.4 257.8 C 129.3 271.9 99.7 202.5 90.5 182.5 C 90.1 181.6 90.1 185.6 88.0 177.0 C 85.8 168.3 80.1 143.2 77.5 130.5 C 74.9 117.8 73.9 110.5 72.4 100.9 C 70.9 91.2 69.0 77.3 68.3 72.5 C 66.3 61.0 83.6 57.9 85.7 69.5 C 86.7 74.1 89.5 87.8 91.6 97.1 C 93.8 106.5 95.1 113.2 98.5 125.5 C 101.9 137.8 109.9 162.0 112.0 171.0 C 114.2 180.0 111.6 178.1 111.5 179.5 C 111.3 182.3 119.8 175.7 119.0 173.0 C 118.7 171.9 117.2 175.7 117.0 166.2 C 116.8 156.8 117.5 129.9 117.6 116.3 C 117.7 102.6 117.7 94.5 117.7 84.3 C 117.7 74.2 117.7 60.2 117.7 55.3 C 117.3 43.0 135.9 42.3 136.3 54.7 C 136.6 59.5 137.6 73.5 138.3 83.7 C 139.0 93.8 139.6 102.0 140.4 115.7 C 141.2 129.4 142.9 156.2 143.0 165.8 C 143.1 175.3 141.3 171.8 141.0 173.0 C 140.3 175.6 149.6 181.0 148.9 178.4 C 148.4 176.8 145.0 178.6 146.1 168.5 C 147.2 158.5 153.1 131.7 155.7 118.3 C 158.3 105.0 159.9 98.0 161.7 88.5 C 163.5 79.1 165.9 66.2 166.7 61.8 C 168.3 50.7 184.9 53.2 183.3 64.2 C 182.8 68.8 181.5 81.9 180.3 91.5 C 179.1 101.0 178.0 108.3 176.3 121.7 C 174.5 135.0 171.1 162.5 169.9 171.5 C 168.7 180.4 169.2 174.9 169.1 175.6 C 168.1 180.4 175.7 197.2 174.9 192.3 C 174.6 190.4 170.8 189.3 173.0 181.1 C 175.2 172.9 184.5 153.3 188.3 143.0 C 192.1 132.8 193.6 127.4 196.0 119.8 C 198.4 112.1 201.8 100.9 202.9 97.2 C 205.4 87.8 219.5 91.4 217.1 100.8 C 216.2 104.7 213.9 116.2 212.0 124.2 C 210.1 132.2 208.9 138.5 205.7 149.0 C 202.5 159.4 195.1 180.1 193.0 186.9 C 190.9 193.7 193.1 189.2 193.1 189.7 C 194.2 216.4 190.8 223.7 186 250 C 184 276 172 294 156 302 C 134.8 308.2 121.2 322.5 108.0 304.8 Z"/></clipPath>
+                  </defs>
+                  <path class="cast" d="M 108.0 304.8 C 104.9 300.7 96.4 288.5 89.6 280.2 C 82.7 271.9 73.6 262.0 67.0 255.1 C 60.5 248.2 55.6 243.8 50.1 238.6 C 44.6 233.3 36.6 225.9 33.9 223.4 C 24.0 215.3 36.2 200.5 46.1 208.6 C 49.1 210.7 57.4 217.0 63.9 221.4 C 70.4 225.8 76.9 228.8 85.0 234.9 C 93.0 241.0 107.9 254.0 112.4 257.8 C 129.3 271.9 99.7 202.5 90.5 182.5 C 90.1 181.6 90.1 185.6 88.0 177.0 C 85.8 168.3 80.1 143.2 77.5 130.5 C 74.9 117.8 73.9 110.5 72.4 100.9 C 70.9 91.2 69.0 77.3 68.3 72.5 C 66.3 61.0 83.6 57.9 85.7 69.5 C 86.7 74.1 89.5 87.8 91.6 97.1 C 93.8 106.5 95.1 113.2 98.5 125.5 C 101.9 137.8 109.9 162.0 112.0 171.0 C 114.2 180.0 111.6 178.1 111.5 179.5 C 111.3 182.3 119.8 175.7 119.0 173.0 C 118.7 171.9 117.2 175.7 117.0 166.2 C 116.8 156.8 117.5 129.9 117.6 116.3 C 117.7 102.6 117.7 94.5 117.7 84.3 C 117.7 74.2 117.7 60.2 117.7 55.3 C 117.3 43.0 135.9 42.3 136.3 54.7 C 136.6 59.5 137.6 73.5 138.3 83.7 C 139.0 93.8 139.6 102.0 140.4 115.7 C 141.2 129.4 142.9 156.2 143.0 165.8 C 143.1 175.3 141.3 171.8 141.0 173.0 C 140.3 175.6 149.6 181.0 148.9 178.4 C 148.4 176.8 145.0 178.6 146.1 168.5 C 147.2 158.5 153.1 131.7 155.7 118.3 C 158.3 105.0 159.9 98.0 161.7 88.5 C 163.5 79.1 165.9 66.2 166.7 61.8 C 168.3 50.7 184.9 53.2 183.3 64.2 C 182.8 68.8 181.5 81.9 180.3 91.5 C 179.1 101.0 178.0 108.3 176.3 121.7 C 174.5 135.0 171.1 162.5 169.9 171.5 C 168.7 180.4 169.2 174.9 169.1 175.6 C 168.1 180.4 175.7 197.2 174.9 192.3 C 174.6 190.4 170.8 189.3 173.0 181.1 C 175.2 172.9 184.5 153.3 188.3 143.0 C 192.1 132.8 193.6 127.4 196.0 119.8 C 198.4 112.1 201.8 100.9 202.9 97.2 C 205.4 87.8 219.5 91.4 217.1 100.8 C 216.2 104.7 213.9 116.2 212.0 124.2 C 210.1 132.2 208.9 138.5 205.7 149.0 C 202.5 159.4 195.1 180.1 193.0 186.9 C 190.9 193.7 193.1 189.2 193.1 189.7 C 194.2 216.4 190.8 223.7 186 250 C 184 276 172 294 156 302 C 134.8 308.2 121.2 322.5 108.0 304.8 Z" filter="url(#hcast)" transform="translate(6,11)"/>
+                  <path class="skin" d="M 108.0 304.8 C 104.9 300.7 96.4 288.5 89.6 280.2 C 82.7 271.9 73.6 262.0 67.0 255.1 C 60.5 248.2 55.6 243.8 50.1 238.6 C 44.6 233.3 36.6 225.9 33.9 223.4 C 24.0 215.3 36.2 200.5 46.1 208.6 C 49.1 210.7 57.4 217.0 63.9 221.4 C 70.4 225.8 76.9 228.8 85.0 234.9 C 93.0 241.0 107.9 254.0 112.4 257.8 C 129.3 271.9 99.7 202.5 90.5 182.5 C 90.1 181.6 90.1 185.6 88.0 177.0 C 85.8 168.3 80.1 143.2 77.5 130.5 C 74.9 117.8 73.9 110.5 72.4 100.9 C 70.9 91.2 69.0 77.3 68.3 72.5 C 66.3 61.0 83.6 57.9 85.7 69.5 C 86.7 74.1 89.5 87.8 91.6 97.1 C 93.8 106.5 95.1 113.2 98.5 125.5 C 101.9 137.8 109.9 162.0 112.0 171.0 C 114.2 180.0 111.6 178.1 111.5 179.5 C 111.3 182.3 119.8 175.7 119.0 173.0 C 118.7 171.9 117.2 175.7 117.0 166.2 C 116.8 156.8 117.5 129.9 117.6 116.3 C 117.7 102.6 117.7 94.5 117.7 84.3 C 117.7 74.2 117.7 60.2 117.7 55.3 C 117.3 43.0 135.9 42.3 136.3 54.7 C 136.6 59.5 137.6 73.5 138.3 83.7 C 139.0 93.8 139.6 102.0 140.4 115.7 C 141.2 129.4 142.9 156.2 143.0 165.8 C 143.1 175.3 141.3 171.8 141.0 173.0 C 140.3 175.6 149.6 181.0 148.9 178.4 C 148.4 176.8 145.0 178.6 146.1 168.5 C 147.2 158.5 153.1 131.7 155.7 118.3 C 158.3 105.0 159.9 98.0 161.7 88.5 C 163.5 79.1 165.9 66.2 166.7 61.8 C 168.3 50.7 184.9 53.2 183.3 64.2 C 182.8 68.8 181.5 81.9 180.3 91.5 C 179.1 101.0 178.0 108.3 176.3 121.7 C 174.5 135.0 171.1 162.5 169.9 171.5 C 168.7 180.4 169.2 174.9 169.1 175.6 C 168.1 180.4 175.7 197.2 174.9 192.3 C 174.6 190.4 170.8 189.3 173.0 181.1 C 175.2 172.9 184.5 153.3 188.3 143.0 C 192.1 132.8 193.6 127.4 196.0 119.8 C 198.4 112.1 201.8 100.9 202.9 97.2 C 205.4 87.8 219.5 91.4 217.1 100.8 C 216.2 104.7 213.9 116.2 212.0 124.2 C 210.1 132.2 208.9 138.5 205.7 149.0 C 202.5 159.4 195.1 180.1 193.0 186.9 C 190.9 193.7 193.1 189.2 193.1 189.7 C 194.2 216.4 190.8 223.7 186 250 C 184 276 172 294 156 302 C 134.8 308.2 121.2 322.5 108.0 304.8 Z"/>
+                  <g clip-path="url(#hclip)">
+                    <g class="sh" filter="url(#hsoft)">
+                    <path d="M 107.2 172.2 C 105.1 164.6 97.5 138.9 94.3 126.5 C 91.1 114.1 89.8 107.3 87.8 97.9 C 85.8 88.5 83.1 74.7 82.2 70.1" stroke-width="7.5"/>
+                    <path d="M 137.8 165.9 C 137.5 157.5 136.4 129.5 135.8 115.8 C 135.2 102.2 134.7 94.0 134.2 83.8 C 133.6 73.6 132.8 59.6 132.6 54.8" stroke-width="7.9"/>
+                    <path d="M 165.1 170.9 C 166.3 162.6 170.3 134.3 172.2 121.0 C 174.1 107.7 175.3 100.4 176.6 90.9 C 177.9 81.3 179.4 68.3 180.0 63.7" stroke-width="7.3"/>
+                    <path d="M 189.0 185.7 C 191.2 179.4 198.9 158.2 202.2 147.8 C 205.5 137.4 206.8 131.3 208.8 123.3 C 210.8 115.4 213.3 104.0 214.2 100.1" stroke-width="6.4"/>
+                    <path d="M 94.1 275.7 C 90.2 271.6 77.5 257.8 70.6 251.1 C 63.7 244.3 58.6 240.2 52.9 235.1 C 47.1 230.0 39.1 222.9 36.3 220.4" stroke-width="10.0"/>
+                    </g>
+                    <g class="ao" filter="url(#hsoft)">
+                    <circle cx="99" cy="205" r="7.5"/>
+                    <circle cx="115" cy="180" r="5.5"/>
+                    <circle cx="144" cy="181" r="5.5"/>
+                    <circle cx="171" cy="191" r="5.5"/>
+                      <path d="M 102 180 C 106.7 178.8 120.7 173.5 130 173 C 139.3 172.5 149.0 174.2 158 177 C 167.0 179.8 179.7 187.8 184 190" stroke-width="4.5" fill="none" stroke-opacity="0.34"/>
+                    </g>
+                    <g class="hi" filter="url(#hsharp)">
+                    <path d="M 94.9 175.2 C 93.0 167.5 86.4 141.6 83.6 129.1 C 80.8 116.5 79.7 109.3 78.0 99.8 C 76.3 90.2 74.1 76.3 73.4 71.6" stroke-width="9.0"/>
+                    <path d="M 124.5 166.1 C 124.5 157.8 124.4 129.8 124.2 116.1 C 124.1 102.5 123.9 94.3 123.7 84.1 C 123.5 74.0 123.2 60.0 123.1 55.1" stroke-width="9.5"/>
+                    <path d="M 153.0 169.4 C 154.4 161.0 159.3 132.6 161.7 119.3 C 164.0 106.0 165.5 98.9 167.1 89.4 C 168.7 79.9 170.8 67.0 171.5 62.5" stroke-width="8.7"/>
+                    <path d="M 178.8 182.8 C 181.2 176.4 189.7 155.0 193.3 144.8 C 197.0 134.5 198.4 128.8 200.6 121.1 C 202.9 113.3 206.0 102.0 207.0 98.2" stroke-width="7.6"/>
+                    <path d="M 105.8 264.3 C 101.5 260.4 87.4 247.1 79.8 240.8 C 72.1 234.4 66.1 231.0 59.9 226.4 C 53.7 221.8 45.5 215.1 42.6 212.9" stroke-width="11.9"/>
+                    </g>
+                  </g>
+                  <path class="rim" d="M 108.0 304.8 C 104.9 300.7 96.4 288.5 89.6 280.2 C 82.7 271.9 73.6 262.0 67.0 255.1 C 60.5 248.2 55.6 243.8 50.1 238.6 C 44.6 233.3 36.6 225.9 33.9 223.4 C 24.0 215.3 36.2 200.5 46.1 208.6 C 49.1 210.7 57.4 217.0 63.9 221.4 C 70.4 225.8 76.9 228.8 85.0 234.9 C 93.0 241.0 107.9 254.0 112.4 257.8 C 129.3 271.9 99.7 202.5 90.5 182.5 C 90.1 181.6 90.1 185.6 88.0 177.0 C 85.8 168.3 80.1 143.2 77.5 130.5 C 74.9 117.8 73.9 110.5 72.4 100.9 C 70.9 91.2 69.0 77.3 68.3 72.5 C 66.3 61.0 83.6 57.9 85.7 69.5 C 86.7 74.1 89.5 87.8 91.6 97.1 C 93.8 106.5 95.1 113.2 98.5 125.5 C 101.9 137.8 109.9 162.0 112.0 171.0 C 114.2 180.0 111.6 178.1 111.5 179.5 C 111.3 182.3 119.8 175.7 119.0 173.0 C 118.7 171.9 117.2 175.7 117.0 166.2 C 116.8 156.8 117.5 129.9 117.6 116.3 C 117.7 102.6 117.7 94.5 117.7 84.3 C 117.7 74.2 117.7 60.2 117.7 55.3 C 117.3 43.0 135.9 42.3 136.3 54.7 C 136.6 59.5 137.6 73.5 138.3 83.7 C 139.0 93.8 139.6 102.0 140.4 115.7 C 141.2 129.4 142.9 156.2 143.0 165.8 C 143.1 175.3 141.3 171.8 141.0 173.0 C 140.3 175.6 149.6 181.0 148.9 178.4 C 148.4 176.8 145.0 178.6 146.1 168.5 C 147.2 158.5 153.1 131.7 155.7 118.3 C 158.3 105.0 159.9 98.0 161.7 88.5 C 163.5 79.1 165.9 66.2 166.7 61.8 C 168.3 50.7 184.9 53.2 183.3 64.2 C 182.8 68.8 181.5 81.9 180.3 91.5 C 179.1 101.0 178.0 108.3 176.3 121.7 C 174.5 135.0 171.1 162.5 169.9 171.5 C 168.7 180.4 169.2 174.9 169.1 175.6 C 168.1 180.4 175.7 197.2 174.9 192.3 C 174.6 190.4 170.8 189.3 173.0 181.1 C 175.2 172.9 184.5 153.3 188.3 143.0 C 192.1 132.8 193.6 127.4 196.0 119.8 C 198.4 112.1 201.8 100.9 202.9 97.2 C 205.4 87.8 219.5 91.4 217.1 100.8 C 216.2 104.7 213.9 116.2 212.0 124.2 C 210.1 132.2 208.9 138.5 205.7 149.0 C 202.5 159.4 195.1 180.1 193.0 186.9 C 190.9 193.7 193.1 189.2 193.1 189.7 C 194.2 216.4 190.8 223.7 186 250 C 184 276 172 294 156 302 C 134.8 308.2 121.2 322.5 108.0 304.8 Z"/>
+                  <g class="bones">
+                    <polyline points="130,300 101,269 76,245 57,230 40,216"/>
+                    <polyline points="130,300 100,174 88,128 82,99 77,71"/>
+                    <polyline points="100,174 130,166 129,116 128,84 127,55"/>
+                    <polyline points="130,166 158,170 166,120 171,90 175,63"/>
+                    <polyline points="158,170 183,184 197,146 204,122 210,99"/>
+                    <polyline points="130,300 183,184"/>
+                  </g>
+                  <g class="pts">
+                    <circle class="lm" cx="130" cy="300" r="3.4" style="animation-delay:0ms"/>
+                    <circle class="lm" cx="101" cy="269" r="3.4" style="animation-delay:55ms"/>
+                    <circle class="lm" cx="76" cy="245" r="3.4" style="animation-delay:110ms"/>
+                    <circle class="lm" cx="57" cy="230" r="3.4" style="animation-delay:165ms"/>
+                    <circle class="lm" cx="40" cy="216" r="3.4" style="animation-delay:220ms"/>
+                    <circle class="lm" cx="100" cy="174" r="3.4" style="animation-delay:275ms"/>
+                    <circle class="lm" cx="88" cy="128" r="3.4" style="animation-delay:330ms"/>
+                    <circle class="lm" cx="82" cy="99" r="3.4" style="animation-delay:385ms"/>
+                    <circle class="lm" cx="77" cy="71" r="3.4" style="animation-delay:440ms"/>
+                    <circle class="lm" cx="130" cy="166" r="3.4" style="animation-delay:495ms"/>
+                    <circle class="lm" cx="129" cy="116" r="3.4" style="animation-delay:550ms"/>
+                    <circle class="lm" cx="128" cy="84" r="3.4" style="animation-delay:605ms"/>
+                    <circle class="lm" cx="127" cy="55" r="3.4" style="animation-delay:660ms"/>
+                    <circle class="lm" cx="158" cy="170" r="3.4" style="animation-delay:715ms"/>
+                    <circle class="lm" cx="166" cy="120" r="3.4" style="animation-delay:770ms"/>
+                    <circle class="lm" cx="171" cy="90" r="3.4" style="animation-delay:825ms"/>
+                    <circle class="lm" cx="175" cy="63" r="3.4" style="animation-delay:880ms"/>
+                    <circle class="lm" cx="183" cy="184" r="3.4" style="animation-delay:935ms"/>
+                    <circle class="lm" cx="197" cy="146" r="3.4" style="animation-delay:990ms"/>
+                    <circle class="lm" cx="204" cy="122" r="3.4" style="animation-delay:1045ms"/>
+                    <circle class="lm" cx="210" cy="99" r="3.4" style="animation-delay:1100ms"/>
+                  </g>
+                </svg>
+              <div class="routes">
+                <p class="route-lead">21 landmarks, extracted client-side, then routed by letter type.</p>
+                <div class="route"><span class="n">63-dim vector &middot; one frame</span><b>ResidualMLP</b><em>the 24 static letters</em></div>
+                <div class="route"><span class="n">30-frame sequence</span><b>Bidirectional LSTM</b><em>J and Z &mdash; the two that move</em></div>
+              </div>
+            </div>
+            <figcaption>Two of the twenty-six letters move. Those two get a sequence model; the other twenty-four get a single-frame one.</figcaption>
+          </figure>
+        </article>
+
+        <!-- 06 -->
+        <article class="case" style="--hue:var(--sienna);--hue-lo:var(--sienna-lo)">
+          <div class="media">
+            <div class="shot" data-slot="assets/resume-ci.png&#10;16 : 10">
+              <img src="assets/resume-ci.png" width="658" height="411" alt="A green GitHub Actions run of the CV build: the steps asserting font binaries, failing on box warnings and verifying PDF invariants all pass." onerror="this.parentElement.classList.add('is-empty')">
+            </div>
+            <p class="cap">CI verifies the PDF still parses for an ATS.</p>
+          </div>
+          <div>
+            <p class="kicker">06 / 06 · Personal</p>
+            <h3>A CV that verifies itself before it ships.</h3>
+            <a class="repo" href="https://github.com/filipp-lotsmanov/resume" target="_blank" rel="noopener">github.com/filipp-lotsmanov/resume</a>
+            <p class="meta">LaTeX · latexmk · GitHub Actions · pdfplumber</p>
+            <details class="more">
+              <summary>How it works</summary>
+              <div class="dt-in">
+              <p class="body">CI asserts the Charter Type 1 binaries are installed, fails on any overfull box, then re-extracts the PDF with <span class="code">pdfplumber</span> and asserts it still parses into the sections an ATS looks for.</p>
+              <dl class="facts">
+              <div class="fact"><dt>Limitation</dt><dd>Charter's 2.77 pt interword gap sits under pdfplumber's 3.0 pt default, so some parsers may merge adjacent words.</dd></div>
+            </dl>
+              </div>
+            </details>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  
+
+  <section class="band" id="stack">
+    <div class="field" aria-hidden="true" style="width:46vw;height:46vw;max-width:640px;max-height:640px;right:-18vw;top:-8vw;background:var(--plum-lo);opacity:.7"></div>
+    <div class="wrap">
+      <div class="head">
+        <h2 class="title">Stack</h2>
+        <p class="lede">Grouped by what it is used for.</p>
+      </div>
+
+      <div class="tagsets">
+        <div class="tagset"><h3>Languages</h3><div class="tags"><span class="tag">Python</span><span class="tag">Go</span><span class="tag">SQL</span></div></div>
+      <div class="tagset"><h3>Deep learning</h3><div class="tags"><span class="tag">PyTorch</span><span class="tag">TensorFlow</span><span class="tag">Keras</span><span class="tag">torchvision</span><span class="tag">Stable Baselines3</span></div></div>
+      <div class="tagset"><h3>Computer vision</h3><div class="tags"><span class="tag">OpenCV</span><span class="tag">MediaPipe</span><span class="tag">U-Net</span><span class="tag">scikit-image</span><span class="tag">scipy.ndimage</span></div></div>
+      <div class="tagset"><h3>Classical ML</h3><div class="tags"><span class="tag">scikit-learn</span><span class="tag">pandas</span><span class="tag">NumPy</span></div></div>
+      <div class="tagset"><h3>Serving</h3><div class="tags"><span class="tag">FastAPI</span><span class="tag">WebSocket</span><span class="tag">TorchScript</span><span class="tag">mixed-precision inference</span></div></div>
+      <div class="tagset"><h3>Orchestration &amp; MLOps</h3><div class="tags"><span class="tag">Airflow</span><span class="tag">Azure ML</span><span class="tag">MLflow</span><span class="tag">ClearML</span><span class="tag">Hydra</span><span class="tag">Prometheus</span></div></div>
+      <div class="tagset"><h3>Infrastructure</h3><div class="tags"><span class="tag">Docker</span><span class="tag">Compose</span><span class="tag">GitHub Actions</span><span class="tag">Portainer</span><span class="tag">PostgreSQL</span><span class="tag">Alembic</span></div></div>
+      <div class="tagset"><h3>Tooling</h3><div class="tags"><span class="tag">uv</span><span class="tag">ruff</span><span class="tag">pytest</span><span class="tag">Vitest</span><span class="tag">Sphinx</span><span class="tag">LaTeX</span></div></div>
+      </div>
+
+      <div style="margin-top:clamp(3.5rem,7vw,6rem)">
+        <h2 class="title" style="margin-bottom:clamp(1.75rem,3vw,2.5rem)">Currently</h2>
+        <ul class="nowlist">
+          <li><span class="lead">Calibration and selective prediction on handwritten text recognition.</span><p>When a vision-language model is wrong about a historical manuscript, does it know?</p></li>
+          <li><span class="lead">DVC, end to end.</span><p>Data and model versioning, pipelines, experiments, CI with CML.</p></li>
+          <li><span class="lead">BSc Applied Data Science &amp; Artificial Intelligence.</span><p>Breda University of Applied Sciences · 2024 – July 2028 · GPA 8.5 / 10</p></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="band wash" id="contact">
+  <div class="wrap">
+    <div class="head">
+      <h2 class="title">Open to ML engineering internships.</h2>
+    </div>
+
+    <div class="reach">
+      <div>
+        <p class="kicker">Email</p>
+        <span class="val" id="email">lotsmanov.filipp@gmail.com</span><br>
+        <button class="copy" type="button" id="copy-email" data-copy="lotsmanov.filipp@gmail.com">Copy address</button>
+      </div>
+      <div><p class="kicker">LinkedIn</p><a class="val" href="https://linkedin.com/in/filipp-lotsmanov/" target="_blank" rel="noopener">in/filipp-lotsmanov</a></div>
+      <div><p class="kicker">GitHub</p><a class="val" href="https://github.com/filipp-lotsmanov" target="_blank" rel="noopener">filipp-lotsmanov</a></div>
+      <div><p class="kicker">Resume</p><a class="val" href="https://github.com/filipp-lotsmanov/resume/blob/main/resume.pdf" target="_blank" rel="noopener">resume.pdf</a></div>
+    </div>
+
+    <p class="colophon">Set in Fraunces and Schibsted Grotesk. Every figure is reproduced from the project repositories with its evaluation set named beside it; diagrams are drawn to the real proportions of a real run.</p>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var ok = true;
+    try { ok = window.matchMedia("(prefers-reduced-motion: no-preference)").matches; } catch (e) { ok = false; }
+    if (!ok) return;
+    document.body.classList.add("motion");
+    if (!("IntersectionObserver" in window)) {
+      document.querySelectorAll(".js-reveal").forEach(function (n) { n.classList.add("reveal"); });
+      return;
+    }
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("reveal"); io.unobserve(e.target); } });
+    }, { rootMargin: "0px 0px -12% 0px", threshold: 0.15 });
+    document.querySelectorAll(".js-reveal").forEach(function (n) { io.observe(n); });
+    /* if the observer never fires, show everything rather than an empty frame */
+    setTimeout(function () {
+      document.querySelectorAll(".js-reveal:not(.reveal)").forEach(function (n) { n.classList.add("reveal"); });
+    }, 5000);
+  })();
+
+  /* Root phenotyping schematic. Procedural, seeded, deterministic.
+     Stands in for plate imagery that belongs to NPEC. */
+  (function () {
+    var cv = document.getElementById("root-schematic");
+    if (!cv || !cv.getContext) return;
+    var ctx = cv.getContext("2d");
+    var W = 1200, H = 750, PAD = 30, GAP = 22, PW = (W - PAD * 2 - GAP * 2) / 3, PT = 52, PH = 606;
+    var ROOT = "#2a3138", MASK = "#0d7a55", LABEL = "#949ca6";
+
+    function seeded(a) {
+      return function () {
+        a |= 0; a = a + 0x6D2B79F5 | 0;
+        var t = Math.imul(a ^ a >>> 15, 1 | a);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+    function makePlant(rand, x0, y0) {
+      var segs = [], best = { len: 0, path: [] };
+      function grow(x, y, ang, len, w, depth, run, path) {
+        var sx = x, sy = y, p = path.slice(), i;
+        for (i = 0; i < 8; i++) {
+          ang += (rand() - 0.5) * 0.34;
+          var nx = sx + Math.cos(ang) * (len / 8), ny = sy + Math.sin(ang) * (len / 8);
+          segs.push({ x1: sx, y1: sy, x2: nx, y2: ny, w: w });
+          p.push(segs.length - 1);
+          run += Math.sqrt((nx - sx) * (nx - sx) + (ny - sy) * (ny - sy));
+          sx = nx; sy = ny;
+        }
+        if (depth >= 3) { if (run > best.len) best = { len: run, path: p }; return; }
+        var n = rand() < 0.35 ? 3 : 2;
+        for (var k = 0; k < n; k++) {
+          var spread = (k - (n - 1) / 2) * (0.40 + rand() * 0.26);
+          grow(sx, sy, ang + spread, len * (0.68 + rand() * 0.14), Math.max(0.6, w * 0.6), depth + 1, run, p);
+        }
+      }
+      grow(x0, y0, Math.PI / 2, 0.30, 4.2, 0, 0, []);
+      return { segs: segs, best: best, x0: x0, y0: y0 };
+    }
+    var plants = [0.235, 0.5, 0.765].map(function (x, i) { return makePlant(seeded(20512 + i * 977), x, 0.105); });
+    function px(pi, x) { return PAD + pi * (PW + GAP) + x * PW; }
+    function py(y) { return PT + y * PH; }
+    function plate(pi) {
+      var x = PAD + pi * (PW + GAP);
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(x, PT, PW, PH, 22); else ctx.rect(x, PT, PW, PH);
+      ctx.fillStyle = "#f4f8f5"; ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(x + 16, py(0.082)); ctx.lineTo(x + PW - 16, py(0.082));
+      ctx.strokeStyle = "#d8dfec"; ctx.setLineDash([4, 5]); ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
+    }
+    function strokeSegs(pi, segs, color, widthAdd, alpha, only, limit) {
+      ctx.strokeStyle = color; ctx.globalAlpha = alpha; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      var cap = limit === undefined ? segs.length : limit;
+      segs.forEach(function (s, i) {
+        if (i >= cap) return;
+        if (only && only.indexOf(i) === -1) return;
+        ctx.beginPath(); ctx.moveTo(px(pi, s.x1), py(s.y1)); ctx.lineTo(px(pi, s.x2), py(s.y2));
+        ctx.lineWidth = Math.max(0.5, s.w + widthAdd); ctx.stroke();
+      });
+      ctx.globalAlpha = 1;
+    }
+    function shoot(pi, p, color, alpha) {
+      ctx.globalAlpha = alpha; ctx.fillStyle = color;
+      ctx.beginPath(); ctx.ellipse(px(pi, p.x0) - 4, py(p.y0) - 8, 9, 4.5, -0.4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(px(pi, p.x0) + 5, py(p.y0) - 11, 8, 4, 0.4, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    function panelLabel(pi, n, text) {
+      var x = PAD + pi * (PW + GAP);
+      ctx.font = '700 12px "Schibsted Grotesk", system-ui, sans-serif'; ctx.textBaseline = "alphabetic";
+      ctx.fillStyle = MASK; ctx.fillText(n, x, 34);
+      ctx.fillStyle = LABEL; ctx.fillText(text, x + 26, 34);
+    }
+    function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
+
+    function draw(t) {
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      cv.width = W * dpr; cv.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
+      panelLabel(0, "01", "IMAGED"); panelLabel(1, "02", "SEGMENTED"); panelLabel(2, "03", "SKELETONISED");
+
+      /* each plate lags the one before it, so the three stages read as a sequence */
+      var prog = [clamp01(t / 0.55), clamp01((t - 0.22) / 0.55), clamp01((t - 0.44) / 0.56)];
+
+      for (var pi = 0; pi < 3; pi++) {
+        plate(pi);
+        var pr = prog[pi];
+        if (pr <= 0) continue;
+        ctx.save(); ctx.beginPath();
+        var cx = PAD + pi * (PW + GAP);
+        if (ctx.roundRect) ctx.roundRect(cx, PT, PW, PH, 22); else ctx.rect(cx, PT, PW, PH);
+        ctx.clip();
+        for (var j = 0; j < plants.length; j++) {
+          var p = plants[j], lim = Math.ceil(pr * p.segs.length);
+          if (pi === 0) {
+            strokeSegs(pi, p.segs, ROOT, 0, 0.85, null, lim);
+            if (pr > 0.04) shoot(pi, p, ROOT, 0.7 * clamp01(pr * 8));
+          } else if (pi === 1) {
+            strokeSegs(pi, p.segs, ROOT, 0, 0.22, null, lim);
+            if (pr > 0.04) shoot(pi, p, ROOT, 0.2 * clamp01(pr * 8));
+            strokeSegs(pi, p.segs, MASK, 7, 0.16, null, lim);
+            strokeSegs(pi, p.segs, MASK, 1.2, 0.85, null, lim);
+          } else {
+            strokeSegs(pi, p.segs, ROOT, -p.segs[0].w + 1.1, 0.26, null, lim);
+            strokeSegs(pi, p.segs, MASK, -p.segs[0].w + 2.8, 0.95, p.best.path, lim);
+            if (pr > 0.97) {
+              var tip = p.segs[p.best.path[p.best.path.length - 1]];
+              ctx.beginPath(); ctx.arc(px(pi, tip.x2), py(tip.y2), 4.4, 0, Math.PI * 2);
+              ctx.strokeStyle = MASK; ctx.lineWidth = 1.6; ctx.stroke();
+            }
+          }
+        }
+        ctx.restore();
+      }
+
+      ctx.font = '700 12px "Schibsted Grotesk", system-ui, sans-serif';
+      ctx.fillStyle = MASK; ctx.fillText("SCHEMATIC", PAD, H - 16);
+      ctx.font = '400 12px "Schibsted Grotesk", system-ui, sans-serif';
+      ctx.fillStyle = LABEL;
+      ctx.fillText("PROCEDURAL DRAWING, NOT A MODEL OUTPUT \u00b7 LONGEST PATH PER SEEDLING MARKED", PAD + 92, H - 16);
+    }
+
+    var last = 1, running = false;
+    function grow() {
+      if (running) return;
+      running = true;
+      var t0 = null, DUR = 2300;
+      (function step(now) {
+        if (t0 === null) t0 = now;
+        var e = Math.min(1, (now - t0) / DUR);
+        last = e < 1 ? 1 - Math.pow(1 - e, 3) : 1;   /* ease-out cubic */
+        draw(last);
+        if (e < 1) requestAnimationFrame(step);
+      })(performance.now());
+      /* if the frame loop is throttled, never leave a half-drawn plate */
+      setTimeout(function () { if (last < 1) { last = 1; draw(1); } }, DUR + 2000);
+    }
+
+    function start() {
+      if (!document.body.classList.contains("motion") || !("IntersectionObserver" in window)) { draw(1); return; }
+      draw(0);
+      var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) { if (e.isIntersecting) { io.unobserve(e.target); grow(); } });
+      }, { threshold: 0.25 });
+      io.observe(cv);
+    }
+
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(start).catch(start); else start();
+    window.addEventListener("resize", function () { clearTimeout(cv._t); cv._t = setTimeout(function () { draw(last); }, 180); });
+  })();
+
+  /* content rises as it enters. Only ever applied when motion is allowed and
+     IntersectionObserver exists, so no path can strand content at opacity 0. */
+  (function () {
+    if (!document.body.classList.contains("motion") || !("IntersectionObserver" in window)) return;
+    var sel = [".head h2", ".head .lede", ".creds", ".fig", "figure.plot", "figure.dgm", "figure.rail",
+               ".case .media", ".case > div:not(.media)", "article > .full-head", "article > .shot.term",
+               "article > .cap", "article > .result", "article > .more", ".tagset", ".nowlist li",
+               ".reach > div", ".colophon"].join(",");
+    var els = [].slice.call(document.querySelectorAll(sel));
+    els.forEach(function (el) { el.classList.add("rise"); });
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var sibs = [].slice.call(e.target.parentElement.children).filter(function (n) { return n.classList.contains("rise"); });
+        var i = Math.min(sibs.indexOf(e.target), 5);
+        e.target.style.transitionDelay = (i > 0 ? i * 70 : 0) + "ms";
+        e.target.classList.add("seen");
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: "0px 0px -7% 0px", threshold: 0.06 });
+    els.forEach(function (el) { io.observe(el); });
+    /* last resort: nothing stays hidden */
+    setTimeout(function () { els.forEach(function (el) { el.classList.add("seen"); }); }, 5000);
+  })();
+
+  /* the page's colour temperature follows whichever project you are reading */
+  (function () {
+    if (!("IntersectionObserver" in window)) return;
+    var root = document.documentElement;
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var lo = getComputedStyle(e.target).getPropertyValue("--hue-lo").trim();
+        if (lo) root.style.setProperty("--amb", lo);
+      });
+    }, { rootMargin: "-45% 0px -45% 0px", threshold: 0 });
+    document.querySelectorAll("article[style*='--hue']").forEach(function (a) { io.observe(a); });
+  })();
+
+  /* the hero fields drift a little under the pointer */
+  (function () {
+    if (!document.body.classList.contains("motion")) return;
+    if (!window.matchMedia || !window.matchMedia("(pointer: fine)").matches) return;
+    var fields = [].slice.call(document.querySelectorAll(".hero .field"));
+    if (!fields.length) return;
+    var tx = 0, ty = 0, queued = false;
+    window.addEventListener("pointermove", function (ev) {
+      tx = (ev.clientX / window.innerWidth - 0.5);
+      ty = (ev.clientY / window.innerHeight - 0.5);
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(function () {
+        queued = false;
+        fields.forEach(function (f, i) {
+          var k = i === 0 ? 26 : -18;
+          f.style.transform = "translate3d(" + (tx * k).toFixed(1) + "px," + (ty * k * 0.7).toFixed(1) + "px,0)";
+        });
+      });
+    }, { passive: true });
+  })();
+
+  (function () {
+    if (!document.body.classList.contains("motion")) return;
+    document.querySelectorAll(".shot, .face").forEach(function (el) {
+      el.addEventListener("click", function () {
+        if (el.classList.contains("nudge")) return;
+        el.classList.add("nudge");
+        el.addEventListener("animationend", function h() {
+          el.classList.remove("nudge");
+          el.removeEventListener("animationend", h);
+        });
+      });
+    });
+  })();
+
+  (function () {
+    document.querySelectorAll(".copy").forEach(function (btn) {
+      var label = btn.textContent;
+      btn.addEventListener("click", function () {
+        var text = btn.getAttribute("data-copy");
+        var restore = function () { setTimeout(function () { btn.textContent = label; }, 1800); };
+        var done = function () { btn.textContent = "Copied"; restore(); };
+        var fallback = function () {
+          var node = document.getElementById("email");
+          if (!node) { btn.textContent = "Select it above"; restore(); return; }
+          try {
+            var r = document.createRange(); r.selectNodeContents(node);
+            var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+            btn.textContent = "Selected — copy it";
+          } catch (e) { btn.textContent = "Select it above"; }
+          restore();
+        };
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+          else fallback();
+        } catch (e) { fallback(); }
+      });
+    });
+  })();
+</script>
+</body>
+</html>
