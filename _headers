@@ -1,0 +1,46 @@
+# Cloudflare Pages response headers.
+# Lives at the root of the build output, next to index.html. Not served itself.
+# Syntax: a path pattern on its own line, then headers indented by two spaces.
+
+/*
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: accelerometer=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+# Why each CSP directive is what it is, for this page specifically:
+#
+#   default-src 'none'      nothing loads unless a directive below allows it.
+#                           No fetch, XHR, WebSocket, iframe, object or worker
+#                           exists in the page, so none is granted.
+#   script-src              one inline <script> block plus seven identical
+#                           onerror="" attributes on the image slots. See the
+#                           note at the bottom about removing 'unsafe-inline'.
+#   style-src               one inline <style> block and 59 style="" attributes,
+#                           plus the Google Fonts stylesheet.
+#   font-src                the woff2 files Google Fonts serves from gstatic.
+#   img-src                 assets/ plus one data:image/svg+xml used in CSS.
+#   base-uri / form-action  no <base> and no <form> exist; deny both.
+#   frame-ancestors 'none'  no one may frame the site. X-Frame-Options above
+#                           says the same thing for browsers too old to read it.
+#
+# Strict-Transport-Security applies to every subdomain of lotsmanov.com for a
+# year. If you later run something on a subdomain that is not HTTPS, it will
+# refuse to load. Drop includeSubDomains if that is a possibility. 'preload' is
+# deliberately absent: it is a one-way door that needs a submission to the
+# browser preload list and is painful to undo.
+#
+# Cloudflare can also set HSTS from the dashboard under SSL/TLS -> Edge
+# Certificates. Set it in one place, not both.
+#
+# To drop 'unsafe-inline' from script-src, replace that directive with:
+#
+#   script-src 'self' 'unsafe-hashes' 'sha256-NVTq/WyG/V6KSzKxurEFyDmMVqE5hAjoL+BVcxXklHs=' 'sha256-7pz7+Oh2X9mOXT6AqLaZ+soUMOC+je1dbFJjJQn951Y='
+#
+# The first hash is the inline <script> block, the second is the shared
+# onerror handler. Both break the moment either changes, with no warning
+# other than a dead page, so only adopt this if you will regenerate them.
